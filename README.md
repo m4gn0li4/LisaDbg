@@ -82,6 +82,9 @@ we have a string in the .rdata (a section which is supposed to store constant da
 
 
 if we modify the bytes at this location like this:
+
+
+
 ![modifiy value in rdata](screen/screen3.png)
 
 
