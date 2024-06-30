@@ -92,4 +92,4 @@ if we modify the bytes at this location like this:
 
 we can see that it displays well: 
 
-
+![modifiy value in rdata](screen/screen4.png)
