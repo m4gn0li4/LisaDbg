@@ -93,3 +93,11 @@ if we modify the bytes at this location like this:
 we can see that it displays well: 
 
 ![modifiy value in rdata](screen/screen4.png)
+
+
+
+features like breakpoints, hooks etc do not work for imported functions (for the moment), but you can manually manipulate the addresses stored in them to redirect the input to your custom function
+
+we can see that at address 0x21000 we have an entry :
+
+
