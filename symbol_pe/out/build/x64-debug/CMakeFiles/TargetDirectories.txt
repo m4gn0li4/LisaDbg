@@ -1,0 +1,3 @@
+C:/code/cpp/symbol_pe/out/build/x64-debug/CMakeFiles/symbol_pe.dir
+C:/code/cpp/symbol_pe/out/build/x64-debug/CMakeFiles/edit_cache.dir
+C:/code/cpp/symbol_pe/out/build/x64-debug/CMakeFiles/rebuild_cache.dir
