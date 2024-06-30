@@ -101,3 +101,5 @@ features like breakpoints, hooks etc do not work for imported functions (for the
 we can see that at address 0x21000 we have an entry :
 
 
+![Iat entry](screen/screen5.png)
+
