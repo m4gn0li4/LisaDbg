@@ -74,5 +74,8 @@ Available commands:
 
 for more information (if available) just type <command> without its arguments
 ```
+the debugger already removes all memory protections, so you can write to memory areas that are e.g. read-only
+# examples :
+ 
 
 
