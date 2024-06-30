@@ -115,3 +115,7 @@ we are now going to create a function with a custom return address like this :
 when we run the programm we can clearly see that the function has been successfully created ! 
 
 ![breakmain](screen/screen8.png)
+
+we can now see that when we calculate the va with the rva of iat entry and we dereference the value uint64_t at this address (va) we obtain 
+
+![breakmain](screen/screen9.png)
