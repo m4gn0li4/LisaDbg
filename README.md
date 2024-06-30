@@ -123,3 +123,8 @@ we can now see that when we calculate the va with the rva of iat entry and we de
 now we are going to change the value at this address to place the address of our function (that was previously 0x1c23a720000) : 
 
 ![change_value](screen/screen10.png)
+
+
+now if we continue execution of the programm we can see that the ret value is 0 and that it displays the message :
+
+![change_return_value](screen/screen11.png)
