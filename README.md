@@ -88,3 +88,8 @@ if we modify the bytes at this location like this:
 ![modifiy value in rdata](screen/screen3.png)
 
 
+
+
+we can see that it displays well: 
+
+
