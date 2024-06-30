@@ -76,6 +76,7 @@ for more information (if available) just type <command> without its arguments
 ```
 the debugger already removes all memory protections, so you can write to memory areas that are e.g. read-only
 # examples :
- 
+we have a string in the .rdata (a section which is supposed to store constant data), here it is : 
+![screen_of_rdata](screen/screen1.png)
 
 
