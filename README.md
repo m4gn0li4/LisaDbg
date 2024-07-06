@@ -1,5 +1,5 @@
 # LisaDbg
-it's a cli debugger written in rust,currently it only works for x64 programs, but this will most likely change in the future,
+it's a rust dbg,currently it only works for x64 programs, but this will most likely change in the future,
 it has a small cli interface but the vast majority of available commands are in the context of the app, 
 # here is the cli interface :
 
