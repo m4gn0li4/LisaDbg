@@ -202,7 +202,7 @@ symbol_pe_BINARY_DIR:STATIC=C:/code/cpp/symbol_pe/out/build/x64-debug
 symbol_pe_IS_TOP_LEVEL:STATIC=ON
 
 //Dependencies for the target
-symbol_pe_LIB_DEPENDS:STATIC=general;dbghelp;
+symbol_pe_LIB_DEPENDS:STATIC=general;C:/Program Files/Microsoft Visual Studio/2022/Professional/DIA SDK/lib/amd64/diaguids.lib;general;dbghelp;
 
 //Value Computed by CMake
 symbol_pe_SOURCE_DIR:STATIC=C:/code/cpp/symbol_pe

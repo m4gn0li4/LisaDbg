@@ -49,12 +49,21 @@ cmake_ninja_workdir = C$:\code\cpp\symbol_pe\out\build\x64-debug\
 
 build cmake_object_order_depends_target_symbol_pe: phony || CMakeFiles\symbol_pe.dir
 
-build CMakeFiles\symbol_pe.dir\symbol_pe.cpp.obj: CXX_COMPILER__symbol_pe_unscanned_Debug C$:\code\cpp\symbol_pe\symbol_pe.cpp || cmake_object_order_depends_target_symbol_pe
+build CMakeFiles\symbol_pe.dir\src\parser.cpp.obj: CXX_COMPILER__symbol_pe_unscanned_Debug C$:\code\cpp\symbol_pe\src\parser.cpp || cmake_object_order_depends_target_symbol_pe
   DEFINES = -Dsymbol_pe_EXPORTS
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
-  INCLUDES = -I"C:\Program Files\Microsoft Visual Studio\2022\Professional\DIA SDK\include" -IC:\MinGW\include
+  INCLUDES = -I"C:\Program Files\Microsoft Visual Studio\2022\Professional\DIA SDK\include"
   OBJECT_DIR = CMakeFiles\symbol_pe.dir
-  OBJECT_FILE_DIR = CMakeFiles\symbol_pe.dir
+  OBJECT_FILE_DIR = CMakeFiles\symbol_pe.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\symbol_pe.dir\
+  TARGET_PDB = symbol_pe.pdb
+
+build CMakeFiles\symbol_pe.dir\src\class\parse_static.cpp.obj: CXX_COMPILER__symbol_pe_unscanned_Debug C$:\code\cpp\symbol_pe\src\class\parse_static.cpp || cmake_object_order_depends_target_symbol_pe
+  DEFINES = -Dsymbol_pe_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I"C:\Program Files\Microsoft Visual Studio\2022\Professional\DIA SDK\include"
+  OBJECT_DIR = CMakeFiles\symbol_pe.dir
+  OBJECT_FILE_DIR = CMakeFiles\symbol_pe.dir\src\class
   TARGET_COMPILE_PDB = CMakeFiles\symbol_pe.dir\
   TARGET_PDB = symbol_pe.pdb
 
@@ -66,10 +75,10 @@ build CMakeFiles\symbol_pe.dir\symbol_pe.cpp.obj: CXX_COMPILER__symbol_pe_unscan
 #############################################
 # Link the shared library symbol_pe.dll
 
-build symbol_pe.dll symbol_pe.lib: CXX_SHARED_LIBRARY_LINKER__symbol_pe_Debug CMakeFiles\symbol_pe.dir\symbol_pe.cpp.obj
+build symbol_pe.dll symbol_pe.lib: CXX_SHARED_LIBRARY_LINKER__symbol_pe_Debug CMakeFiles\symbol_pe.dir\src\parser.cpp.obj CMakeFiles\symbol_pe.dir\src\class\parse_static.cpp.obj | C$:\Program$ Files\Microsoft$ Visual$ Studio\2022\Professional\DIA$ SDK\lib\amd64\diaguids.lib
   LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL
-  LINK_LIBRARIES = dbghelp.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  LINK_LIBRARIES = "C:\Program Files\Microsoft Visual Studio\2022\Professional\DIA SDK\lib\amd64\diaguids.lib"  dbghelp.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   OBJECT_DIR = CMakeFiles\symbol_pe.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
