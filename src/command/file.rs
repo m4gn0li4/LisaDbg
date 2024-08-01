@@ -21,6 +21,7 @@ pub fn handle_change_file(linev: &[&str], line: &str) {
                         return;
                     }
                     println!("{VALID_COLOR}Now the file context is '{}'{RESET_COLOR}", OPTION.file.clone().unwrap());
+                    symbol::load_symbol();
                 }else {
                     eprintln!("{ERR_COLOR}please specify a valid pe file{RESET_COLOR}");
                 }

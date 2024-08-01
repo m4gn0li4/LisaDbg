@@ -1,24 +1,42 @@
 use std::{io, mem};
 use regex::Regex;
-use winapi::shared::minwindef::{LPCVOID, LPVOID};
+use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::HANDLE;
 use winapi::um::memoryapi::ReadProcessMemory;
 use winapi::um::winnt::CONTEXT;
+use crate::dbg::dbg_cmd::info_reg::{ToValue, Value};
 use crate::dbg::dbg_cmd::usages;
+use crate::dbg::RealAddr;
 use crate::log::*;
+use crate::symbol::SYMBOLS_V;
 
-pub unsafe fn read_memory<T: std::fmt::LowerHex>(process_handle: HANDLE, address: usize, size: usize, bytes_read: &mut usize) {
-    let mut addr_tr = address;
-    for _ in 0..size {
-        let mut buffer: T = mem::zeroed();
-        if ReadProcessMemory(process_handle, addr_tr as LPCVOID, &mut buffer as *mut _ as LPVOID, mem::size_of::<T>(), bytes_read) == 0 {
-            eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> Failed to read memory: {}", io::Error::last_os_error());
-            break
-        } else {
-            println!("{:#x}: {VALUE_COLOR}{:#x}{RESET_COLOR}", addr_tr, buffer);
-        }
-        addr_tr += mem::size_of::<T>()
+unsafe fn read_memory<T: std::fmt::LowerHex + Default + Clone>(process_handle: HANDLE, address: usize, size: usize, bytes_read: &mut usize){
+    let r_size = size * mem::size_of::<T>();
+    let mut result = vec![T::default(); size];
+    if ReadProcessMemory(process_handle, address as LPVOID, result.as_mut_ptr() as LPVOID, r_size, bytes_read) == 0 {
+        eprintln!("{ERR_COLOR}failed to read memory : {}{RESET_COLOR}", io::Error::last_os_error());
+        return;
     }
+    print!("{:#x}: {}{VALUE_COLOR}",address, if size > 1 {"["}else {""});
+    for (i, elm) in result.iter().enumerate() {
+        print!("{:#x}{}", elm, if size > 1 || i != size - 1 {", "} else {""});
+    }
+    println!("{RESET_COLOR}{}", if size > 1 {"]"}else {""});
+}
+
+
+unsafe fn read_memory_flt<T: num::Float + std::fmt::Display + Default>(process_handle: HANDLE, address: usize, size: usize, byte_read: &mut usize) {
+    let r_size = size * mem::size_of::<T>();
+    print!("{:#x}: {}{VALUE_COLOR}",address, if size > 1 {"["}else {""});
+    let mut result = vec![T::default(); size];
+    if ReadProcessMemory(process_handle, address as LPVOID, result.as_mut_ptr() as LPVOID, r_size, byte_read) == 0 {
+        eprintln!("{ERR_COLOR}failed to read memory : {}", io::Error::last_os_error());
+        return;
+    }
+    for (i, elm) in result.iter().enumerate(){
+        print!("{}{}", elm, if size > 1 || i != size - 1 {", "} else {""});
+    }
+    println!("{RESET_COLOR}{}", if size > 1 {"]"}else {""});
 }
 
 
@@ -29,45 +47,39 @@ pub fn handle_deref(linev: &[&str], ctx: CONTEXT, process_handle: HANDLE) {
     }
     let dtype = linev[1];
     let target = linev[2];
-    let address = if let Ok(addr) = str_to::<usize>(target) {
+    if target == "" {
+        eprintln!("{ERR_COLOR}empty target{RESET_COLOR}");
+        return;
+    }
+    let address = if let Ok(addr) = str_to::<u64>(target) {
         addr
     } else {
-        get_value_with_reg(target, ctx) as usize
-    };
-    if address == 0 { return }
-    if let Err(err) = deref_memory(process_handle, dtype, address) { eprintln!("{ERR_COLOR}{}{RESET_COLOR}", err) }
-}
-
-
-fn get_value_with_reg(reg: &str, ctx: CONTEXT) -> u64{
-    match reg {
-        "rsp" => ctx.Rsp,
-        "rbp" => ctx.Rbp,
-        "rax" => ctx.Rax,
-        "rbx" => ctx.Rbx,
-        "rcx" => ctx.Rcx,
-        "rdx" => ctx.Rdx,
-        "rsi" => ctx.Rsi,
-        "rdi" => ctx.Rdi,
-        "rip" => ctx.Rip,
-        "r8"  => ctx.R8,
-        "r9"  => ctx.R9,
-        "r10" => ctx.R10,
-        "r11" => ctx.R11,
-        "r12" => ctx.R12,
-        "r13" => ctx.R13,
-        "r14" => ctx.R14,
-        "r15" => ctx.R15,
-        _ => {
-            eprintln!("{ERR_COLOR}Invalid address or register: {reg}{RESET_COLOR}");
-            return 0
+        let value = ctx.str_to_value_ctx(target);
+        let addr = match value {
+            Value::U64(value) => value,
+            Value::U128(xmm) => xmm.Low,
+            Value::Un => 0,
+        };
+        if addr != 0 {
+            addr
         }
-    }
+        else {
+            unsafe {
+                if let Some(sym) = SYMBOLS_V.symbol_file.iter().find(|s| s.name == target) {
+                    sym.real_addr64(ctx)
+                } else {
+                    eprintln!("{ERR_COLOR}invalid target : '{target}'{RESET_COLOR}");
+                    return;
+                }
+            }
+        }
+    };
+    if let Err(err) = deref_memory(process_handle, dtype, address as usize) { eprintln!("{ERR_COLOR}{}{RESET_COLOR}", err) }
 }
 
 
 
-fn deref_memory(process_handle: HANDLE, dtype: &str, address: usize) -> Result<(), String> {
+pub fn deref_memory(process_handle: HANDLE, dtype: &str, address: usize) -> Result<(), String> {
     let mut bytes_read = 0;
     let re = Regex::new(r"\[(.*?)]").unwrap();
     let mut size = 1;
@@ -80,23 +92,25 @@ fn deref_memory(process_handle: HANDLE, dtype: &str, address: usize) -> Result<(
                 }
             }
         }
+    }else {
+        size = 0;
     }
-    let mut types_r = dtype;
-    if types_r != "char[]" {
-        types_r = dtype.split('[').next().unwrap_or_default();
-    }
+
+    let types_r = dtype.split('[').next().unwrap_or_default();
 
     unsafe {
         match types_r {
-            "uint8_t" | "char" => read_memory::<u8>(process_handle, address, size, &mut bytes_read),
+            "uint8_t" | "byte" => read_memory::<u8>(process_handle, address, size, &mut bytes_read),
             "int8_t" => read_memory::<i8>(process_handle, address, size, &mut bytes_read),
-            "uint16_t" => read_memory::<u16>(process_handle, address, size, &mut bytes_read),
-            "int16_t" => read_memory::<i16>(process_handle, address, size, &mut bytes_read),
-            "uint32_t" => read_memory::<u32>(process_handle, address, size, &mut bytes_read),
-            "int32_t" => read_memory::<i32>(process_handle, address, size, &mut bytes_read),
-            "uint64_t" => read_memory::<u64>(process_handle, address, size, &mut bytes_read),
+            "uint16_t" | "word" => read_memory::<u16>(process_handle, address, size, &mut bytes_read),
+            "int16_t" | "short" => read_memory::<i16>(process_handle, address, size, &mut bytes_read),
+            "uint32_t" | "dword" => read_memory::<u32>(process_handle, address, size, &mut bytes_read),
+            "int32_t" | "int" | "long" => read_memory::<i32>(process_handle, address, size, &mut bytes_read),
+            "uint64_t" | "qword" => read_memory::<u64>(process_handle, address, size, &mut bytes_read),
             "int64_t" => read_memory::<i64>(process_handle, address, size, &mut bytes_read),
-            "char[]" => read_string(process_handle, address, &mut bytes_read),
+            "float" | "f32" => read_memory_flt::<f32>(process_handle, address, size, &mut bytes_read),
+            "double" | "f64" => read_memory_flt::<f64>(process_handle, address, size, &mut bytes_read),
+            "char" => read_string(process_handle, address, size,  &mut bytes_read),
             _ => return Err(format!("Unknown type: {}", dtype)),
         }
     }
@@ -128,17 +142,24 @@ pub fn espc(input: &[u8]) -> String {
 
 
 
-pub unsafe fn read_string(process_handle: HANDLE, address: usize, bytes_read: &mut usize) {
-    let mut buffer = vec![0u8; 256];
-    if ReadProcessMemory(process_handle, address as LPCVOID, buffer.as_mut_ptr() as LPVOID, buffer.len(), bytes_read) == 0 {
-        eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> Failed to read memory: {}", io::Error::last_os_error());
-        return;
+pub unsafe fn read_string(process_handle: HANDLE, address: usize, size: usize, bytes_read: &mut usize) {
+    let mut b_str = Vec::new();
+    let addr_s = address;
+    let mut i = 0;
+    let mut b = 1u8;
+    loop {
+        if ReadProcessMemory(process_handle, (addr_s + i) as LPVOID, &mut b as *mut _ as LPVOID, 1, &mut 0) == 0 {
+            eprintln!("{ERR_COLOR}failed to read memory at address {:#x} : {}", address, io::Error::last_os_error());
+            return;
+        }
+        if size != 0 && i == size || size == 0 && b == 0 {
+            break
+        }
+        b_str.push(b);
+        *bytes_read += 1;
+        i+=1;
     }
-    if *bytes_read < buffer.len() {
-        buffer[*bytes_read] = 0;
-    }
-    let null_pos = buffer.iter().position(|&c| c == 0).unwrap_or(buffer.len());
-    let str_byte = &buffer[..null_pos];
+    let str_byte = &b_str[..if size != 0 {size} else {b_str.len()}];
     let str_r = espc(str_byte);
-    println!("char[] at 0x{:x}: \"{}\"", address, str_r);
+    println!("{:#x}: \"{}\"", address, str_r);
 }

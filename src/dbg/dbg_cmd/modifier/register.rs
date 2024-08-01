@@ -82,7 +82,8 @@ fn set_flag(eflag: &mut u32, value: Value) {
             }
             *eflag = value as u32
         },
-        Value::U128(_) => eprintln!("{ERR_COLOR}you cannot put a value above 32bits in this destination{RESET_COLOR}")
+        Value::U128(_) => eprintln!("{ERR_COLOR}you cannot put a value above 32bits in this destination{RESET_COLOR}"),
+        Value::Un => eprintln!("{ERR_COLOR}unknow register{RESET_COLOR}")
     }
 }
 
@@ -96,12 +97,16 @@ fn set_reg_simd(reg: &mut M128A, value: Value) {
             reg.High = 0;
         },
         Value::U128(value) => *reg = value,
+        _ => {}
     }
 }
+
+
 
 fn set_reg64(reg: &mut u64, value: Value) {
     match value {
         Value::U64(val) => *reg = val,
-        Value::U128(_) => eprintln!("{ERR_COLOR}you can't put a 128bit value into a 64bit register{RESET_COLOR}")
+        Value::U128(_) => eprintln!("{ERR_COLOR}you can't put a 128bit value into a 64bit register{RESET_COLOR}"),
+        _ => {}
     }
 }

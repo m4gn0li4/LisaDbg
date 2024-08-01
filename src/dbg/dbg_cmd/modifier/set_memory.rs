@@ -10,6 +10,8 @@ use winapi::shared::ntdef::HANDLE;
 use winapi::um::winnt::{CONTEXT, PAGE_EXECUTE_READWRITE};
 use crate::dbg::dbg_cmd::usages;
 use crate::log::str_to;
+use crate::dbg::RealAddr;
+use crate::symbol::SYMBOLS_V;
 
 pub fn handle_set_memory(process_handle: HANDLE, ctx: CONTEXT, linev: &[&str]) {
     if linev.len() < 4 {
@@ -35,9 +37,13 @@ pub fn handle_set_memory(process_handle: HANDLE, ctx: CONTEXT, linev: &[&str]) {
     if target_addr == 0 {
         match str_to::<u64>(target) {
             Ok(addr) => target_addr = addr,
-            Err(e) =>  {
-                eprintln!("{ERR_COLOR}invalid target adress : {e}{RESET_COLOR}");
-                return;
+            Err(_) => unsafe {
+                if let Some(sym) = SYMBOLS_V.symbol_file.iter().find(|s|s.name == target) {
+                    target_addr = sym.real_addr64(ctx);
+                }else {
+                    eprintln!("{ERR_COLOR}invalid target : '{target}'{RESET_COLOR}");
+                    return;
+                }
             }
         }
     }
@@ -64,7 +70,7 @@ enum Mod2 {
 }
 
 
-fn target_in_memory<T: Num<FromStrRadixErr = ParseIntError> + FromStr<Err = ParseIntError> + Default + std::fmt::Debug>(process_handle: HANDLE, value_str: &str, target_addr: u64, size: usize) {
+pub fn target_in_memory<T: Num<FromStrRadixErr = ParseIntError> + Default + std::fmt::Debug + FromStr<Err = ParseIntError>>(process_handle: HANDLE, value_str: &str, target_addr: u64, size: usize) {
     let mut size = size;
     let mut result: Vec<T> = Vec::new();
     let mut mod_2 = Mod2::IsDigit;
@@ -107,22 +113,23 @@ fn target_in_memory<T: Num<FromStrRadixErr = ParseIntError> + FromStr<Err = Pars
     }
 
     let mut addr_t = target_addr;
+    let mut old_protect = 0;
     unsafe {
+        if VirtualProtectEx(process_handle, addr_t as LPVOID, size, PAGE_EXECUTE_READWRITE, &mut old_protect) == 0 {
+            eprintln!("{ERR_COLOR}error to remove memory protection at address {:#x}", addr_t);
+            return;
+        }
         for i in 0..size {
             let value_targ = &result[i];
-            let mut old_protect = 0;
-            if VirtualProtectEx(process_handle, addr_t as LPVOID, mem::size_of::<T>(), PAGE_EXECUTE_READWRITE, &mut old_protect) == 0 {
-                eprintln!("{ERR_COLOR}error to remove memory protection at address {:#x}", addr_t);
-                return;
-            }
             if WriteProcessMemory(process_handle, addr_t as LPVOID, value_targ as *const _ as LPCVOID, mem::size_of::<T>(), &mut 0) == 0 {
-                eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> error when writing to memory at adress : {:#x}", addr_t);
+                eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> error when writing to memory at address : {:#x}", addr_t);
                 return;
-            }
-            if VirtualProtectEx(process_handle, addr_t as LPVOID, mem::size_of::<T>(), old_protect, &mut old_protect) == 0 {
-                eprintln!("{ERR_COLOR}error to restaure memory protection at address {:#x}", addr_t);
             }
             addr_t += mem::size_of::<T>() as u64;
+        }
+        if VirtualProtectEx(process_handle, addr_t as LPVOID, size, old_protect, &mut old_protect) == 0 {
+            eprintln!("{ERR_COLOR}error to restaure memory protection at address {:#x}", addr_t);
+            return;
         }
     }
     println!("{VALID_COLOR}the changes were made successfully{RESET_COLOR}")

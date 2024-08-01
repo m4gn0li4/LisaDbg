@@ -1,8 +1,33 @@
+use std::io;
 use anyhow::Error;
-use crate::dbg::hook::{Hook, ModIntpr};
-use crate::{OPTION, symbol, usage};
-use crate::dbg::hook;
+use crate::{command, OPTION, usage};
 use crate::log::*;
+
+#[derive(Eq, PartialEq, Clone, Copy)]
+pub enum ModIntpr {
+    Address,
+    Name,
+}
+
+impl Default for ModIntpr {
+    fn default() -> Self {
+        ModIntpr::Name
+    }
+}
+
+
+
+
+#[derive(Default, Copy, Clone)]
+pub struct Hook {
+    pub target: u64,
+    pub replacen: u64,
+}
+
+
+pub static mut HOOK_FUNC: Vec<Hook> = Vec::new();
+
+
 
 pub fn handle_hook_func(linev: &[&str]) {
     if linev.len() < 3 {
@@ -27,7 +52,7 @@ pub fn handle_hook_func(linev: &[&str]) {
     }
     if vec_addr_1.len() == 2 {
         unsafe { OPTION.breakpoint_addr.push(vec_addr_1[0]) }
-        unsafe { hook::HOOK_FUNC.push(Hook {
+        unsafe { HOOK_FUNC.push(Hook {
             target: vec_addr_1[0],
             replacen: vec_addr_1[1],
         }) }
@@ -46,11 +71,9 @@ fn get_addr_with_mod(target: &str, mod_intpr: ModIntpr) -> anyhow::Result<u64, E
         Ok(str_to::<u64>(target)?)
     }
     else {
-        let addr_func = symbol::target_addr_with_name_sym(target);
-        if addr_func == 0 {
-            return Err(Error::msg(format!("unknown symbol '{target}'")));
+        match command::breakpoint::get_addr_br(target) {
+            Ok(value) => Ok(value),
+            Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e).into()),
         }
-        Ok(addr_func)
     }
 }
-

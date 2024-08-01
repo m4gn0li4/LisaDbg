@@ -1,6 +1,5 @@
 use winapi::um::winnt::{IMAGE_DATA_DIRECTORY, RUNTIME_FUNCTION};
 use std::{mem, slice};
-use crate::dbg::BASE_ADDR;
 use crate::log::*;
 use crate::pefile;
 
@@ -19,33 +18,15 @@ pub struct CrtFunc {
 
 pub static mut CR_FUNCTION: Vec<CrtFunc> = Vec::new();
 
-pub trait Verifie {
-    fn is_in_func(&self, begin_addr: u64, addr: u64) -> bool;
-}
-
-
-impl Verifie for Vec<RUNTIME_FUNCTION> {
-    fn is_in_func(&self, begin_addr: u64, addr: u64) -> bool {
-        let begin_addr = (begin_addr - unsafe {BASE_ADDR}) as u32;
-        let addr = (addr - unsafe {BASE_ADDR}) as u32;
-        for func_info in self {
-            if begin_addr == func_info.BeginAddress && func_info.BeginAddress <= addr && func_info.EndAddress >= addr {
-                return true;
-            }
-        }
-        false
-    }
-}
-
 
 pub fn parse_pdata(pdata_dir: IMAGE_DATA_DIRECTORY) {
     if pdata_dir.VirtualAddress == 0 || pdata_dir.Size == 0 {
+        eprintln!("{ERR_COLOR}no section is IMAGE_DIRECTORY_ENTRY_EXCEPTION{RESET_COLOR}");
         return;
     }
-    let rva_pdata = pdata_dir.VirtualAddress as usize;
+    let rva_pdata = pdata_dir.VirtualAddress;
     for section in unsafe { &*pefile::section::SECTION_VS } {
-        let section_start = section.addr;
-        if rva_pdata == section_start {
+        if rva_pdata == section.addr {
             let runt_size = section.content.len() / mem::size_of::<RUNTIME_FUNCTION>();
             let base_pdata = section.content.as_ptr() as *const RUNTIME_FUNCTION;
             let runt_func = unsafe { slice::from_raw_parts(base_pdata, runt_size) };

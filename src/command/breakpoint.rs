@@ -1,29 +1,20 @@
-use crate::{symbol, usage};
-use crate::log::*;
+use crate::{usage, log::*};
 use crate::OPTION;
-use anyhow::{Result, Error};
+use winapi::shared::ntdef::HANDLE;
+use crate::dbg::{BASE_ADDR, memory};
+use crate::symbol::SYMBOLS_V;
 
 pub fn handle_breakpts(linev: &[&str]) {
     if linev.len() == 2 {
-        match str_to(linev[1]) {
-            Ok(addr) => {
-                unsafe {
-                    OPTION.breakpoint_addr.push(addr);
-                    println!("{VALID_COLOR}Breakpoints are set at addresses : {:#x}{RESET_COLOR}", addr);
-                }
+        let addr = match get_addr_br(linev[1]) {
+            Ok(value) => value,
+            Err(e) => {
+                eprintln!("{e}");
+                return;
             }
-            Err(_) =>  {
-                let addr = symbol::target_addr_with_name_sym(linev[1]);
-                if addr == 0 {
-                    eprintln!("{ERR_COLOR}invalid target : {}", linev[1]);
-                    return;
-                }
-                unsafe {
-                    OPTION.breakpoint_addr.push(addr);
-                    println!("{VALID_COLOR}Breakpoints are set at addresses : {:#x}{RESET_COLOR}", addr);
-                }
-            },
-        }
+        };
+        unsafe { OPTION.breakpoint_addr.push(addr); }
+        println!("{VALID_COLOR}Breakpoints are set at address {:#x}{RESET_COLOR}", addr);
     }else {
         eprintln!("{}", usage::USAGE_BRPT);
     }
@@ -31,35 +22,61 @@ pub fn handle_breakpts(linev: &[&str]) {
 
 
 
-pub fn handle_retain_breakpoint(linev: &[&str]) {
-    if linev.len() == 2 {
-        let addr_result: Result<u64, Error> = match str_to(linev[1]) {
-            Ok(addr) => Ok(addr),
-            Err(_) => {
-                let addr = symbol::target_addr_with_name_sym(linev[1]);
-                if addr == 0 {
-                    eprintln!("{ERR_COLOR}invalid target : {}{RESET_COLOR}", linev[1]);
-                    return;
-                }
-                Ok(addr)
-            },
-        };
 
-        if let Ok(addr) = addr_result {
-            unsafe {
-                if OPTION.breakpoint_addr.contains(&addr) {
-                    OPTION.breakpoint_addr.retain(|&address| address != addr);
-                    println!("{VALID_COLOR}the breakpoint {:#x} has retain{RESET_COLOR}", addr);
-                } else {
-                    eprintln!("{ERR_COLOR}the breakpoint vector does not contain this address{RESET_COLOR}");
+
+pub fn get_addr_br(addr_str: &str) -> Result<u64, String> {
+    match str_to::<u64>(addr_str) {
+        Ok(value) => Ok(value),
+        Err(_) => unsafe {
+            if let Some(sym) = SYMBOLS_V.symbol_file.iter().find(|s|s.name == addr_str) {
+                if sym.offset > 0 {
+                    Ok(sym.offset as u64)
+                }else {
+                    return Err(format!("{ERR_COLOR}the specified symbol cannot have a negative offset{RESET_COLOR}"));
                 }
+            }else {
+                return Err(format!("{ERR_COLOR}invalid target : {}{RESET_COLOR}", addr_str));
             }
         }
-    } else {
-        eprintln!("{}", usage::USAGE_BRPT.replace("breakpoint", "retain-breakpoint"));
     }
 }
 
 
 
+pub fn handle_breakpoint_proc(linev: &[&str], process_handle: HANDLE) {
+    if linev.len() != 2 {
+        eprintln!("{}", usage::USAGE_BRPT);
+    } else {
+        let addr_str = linev[1];
+        let addr = match get_addr_br(addr_str) {
+            Ok(value) => value,
+            Err(e) => {
+                eprintln!("{e}");
+                return;
+            }
+        };
+        unsafe {
+            OPTION.breakpoint_addr.push(addr);
+            memory::breakpoint::set_breakpoint(process_handle, addr)
+        }
+    }
+}
+
+
+
+
+
+pub fn handle_restore_breakpoint_proc(linev: &[&str], process_handle: HANDLE) {
+    if linev.len() == 2 {
+        let addr_str = linev[1];
+        let addr = match get_addr_br(addr_str) {
+            Ok(value) => value,
+            Err(e) => {
+                eprintln!("{e}");
+                return;
+            }
+        };
+        unsafe { memory::breakpoint::restore_byte_of_brkpt(process_handle, addr + BASE_ADDR) }
+    }
+}
 

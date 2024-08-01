@@ -1,5 +1,5 @@
-use crate::{Dbgoption, OPTION, pefile, ste, symbol, usage};
-use crate::dbg::hook;
+use crate::{Dbgoption, OPTION, pefile, symbol, usage};
+use crate::command::{hook, skip, stret};
 use crate::pefile::function;
 use crate::symbol::Symbols;
 use crate::log::*;
@@ -30,22 +30,26 @@ pub fn handle_reset(linev: &[&str]) {
                     hook::HOOK_FUNC.clear();
                     println!("{VALID_COLOR}all hook set by cmd 'hook' has been deleted{RESET_COLOR}")
                 }
-                "stret" => {
-                    ste::STE_RETURN_ADDR.clear();
+                "break-ret" | "b-ret" => {
+                    stret::BREAK_RET.clear();
                     println!("{VALID_COLOR}all the functions traced for their ret were clear{RESET_COLOR}");
                 }
                 "skip" => {
-                    ste::ST_OVER_ADDR.clear();
+                    skip::SKIP_ADDR.clear();
                     println!("{VALID_COLOR}all functions specified with skip have been reset{RESET_COLOR}");
                 }
                 "args" | "arg" | "argv" => {
                     OPTION.arg = None;
                     println!("{VALID_COLOR}the arguments have been removed{RESET_COLOR}");
                 }
+                "watchpoint" | "watchpts" | "w" => {
+                    OPTION.watchpts.clear();
+                    println!("{VALID_COLOR}all watchpoint has been removed{RESET_COLOR}");
+                }
                 "all" => {
                     pefile::NT_HEADER = std::mem::zeroed();
-                    ste::ST_OVER_ADDR.clear();
-                    ste::STE_RETURN_ADDR.clear();
+                    skip::SKIP_ADDR.clear();
+                    stret::BREAK_RET.clear();
                     function::FUNC_INFO.clear();
                     function::CR_FUNCTION.clear();
                     hook::HOOK_FUNC.clear();
