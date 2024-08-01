@@ -7,14 +7,14 @@ use crate::log::*;
 use std::io;
 use std::io::Write;
 use winapi::shared::ntdef::HANDLE;
+use winapi::um::dbghelp::SymCleanup;
 use winapi::um::winnt::WOW64_CONTEXT;
 use crate::{command, usage};
 use crate::dbg::{BASE_ADDR, memory};
 use crate::dbg::dbg_cmd::*;
 use crate::log::str_to;
 use crate::pefile::function;
-
-
+use crate::symbol::SymbolType;
 
 fn init_cm(ctx: WOW64_CONTEXT, process_handle: HANDLE, h_thread: HANDLE, addr_func: &mut u32) {
     unsafe {
@@ -25,7 +25,11 @@ fn init_cm(ctx: WOW64_CONTEXT, process_handle: HANDLE, h_thread: HANDLE, addr_fu
         }else {
             ctx.Eip
         };
-        memory::stack::get_local_sym(process_handle, *addr_func as u64);
+        if SYMBOLS_V.symbol_type == SymbolType::PDB {
+            memory::stack::get_local_sym(process_handle, *addr_func as u64);
+        }else {
+            SymCleanup(process_handle);
+        }
     }
 }
 

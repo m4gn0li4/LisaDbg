@@ -1,7 +1,7 @@
 use crate::{Dbgoption, OPTION, pefile, symbol, usage};
 use crate::command::{hook, skip, stret};
 use crate::pefile::function;
-use crate::symbol::Symbols;
+use crate::symbol::{Symbols, SYMBOLS_V};
 use crate::log::*;
 
 pub fn handle_reset(linev: &[&str]) {
@@ -11,6 +11,7 @@ pub fn handle_reset(linev: &[&str]) {
         unsafe {
             match opt {
                 "file" => {
+                    *SYMBOLS_V = Symbols::default();
                     OPTION.file = None;
                     println!("{VALID_COLOR}file context are reset{RESET_COLOR}");
                 },
@@ -19,7 +20,7 @@ pub fn handle_reset(linev: &[&str]) {
                     println!("{VALID_COLOR}all breakpoint are clear{RESET_COLOR}");
                 },
                 "symbol" | "s" => {
-                    *symbol::SYMBOLS_V = Symbols::default();
+                    *SYMBOLS_V = Symbols::default();
                     println!("{VALID_COLOR}all symbols have been unloaded{RESET_COLOR}");
                 }
                 "create-function" | "create-func" | "crt-func" => {

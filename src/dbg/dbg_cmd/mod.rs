@@ -9,6 +9,7 @@ use std::io::{self, Write};
 use std::str;
 use winapi::um::processthreadsapi;
 use winapi::shared::ntdef::HANDLE;
+use winapi::um::dbghelp::SymCleanup;
 use winapi::um::winnt::CONTEXT;
 use crate::{command, symbol, usage};
 use crate::command::skip::SKIP_ADDR;
@@ -18,7 +19,7 @@ use crate::dbg::memory::stack::ST_FRAME;
 use crate::log::*;
 use crate::pefile::function;
 use crate::pefile::function::FUNC_INFO;
-use crate::symbol::SYMBOLS_V;
+use crate::symbol::{SYMBOLS_V, SymbolType};
 
 fn init_cm(ctx: CONTEXT, process_handle: HANDLE, h_thread: HANDLE, addr_func: &mut u64) {
     unsafe {
@@ -30,7 +31,11 @@ fn init_cm(ctx: CONTEXT, process_handle: HANDLE, h_thread: HANDLE, addr_func: &m
         }else {
             ctx.Rip
         };
-        memory::stack::get_local_sym(process_handle, *addr_func);
+        if SYMBOLS_V.symbol_type == SymbolType::PDB {
+            memory::stack::get_local_sym(process_handle, *addr_func);
+        }else {
+            SymCleanup(process_handle);
+        }
     }
 }
 
