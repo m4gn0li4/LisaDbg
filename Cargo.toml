@@ -6,14 +6,11 @@ edition = "2021"
 [dependencies]
 structopt = "0.3.26"
 once_cell = "1.19.0"
-libloading = "0.8.4"
+libloading = "0.8.5"
 num = "0.4.3"
-gimli = "0.30.0"
+gimli = "0.31.0"
 regex = "1.10.5"
 iced-x86 = "1.21.0"
 anyhow = "1.0.86"
-
-
-[dependencies.winapi]
-version = "0.3.9"
-features = ["ntdef", "memoryapi", "winnt", "handleapi", "fileapi", "processthreadsapi", "debugapi"]
+fallible-iterator = "0.3.0"
+winapi = { version = "0.3.9", features = ["ntdef", "memoryapi", "winnt", "handleapi", "fileapi", "processthreadsapi", "debugapi", "dbghelp"] }
