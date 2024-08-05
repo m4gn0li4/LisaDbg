@@ -82,7 +82,7 @@ fn debug_loop(process_handle: HANDLE) {
                                 _ => "unknown",
                             };
                             let mut mem_info: MEMORY_BASIC_INFORMATION = mem::zeroed();
-                            let query_result = VirtualQueryEx(process_handle, except_addr as *const _, &mut mem_info, mem::size_of::<MEMORY_BASIC_INFORMATION>());
+                            let query_result = VirtualQueryEx(process_handle, except_addr as LPVOID, &mut mem_info, mem::size_of::<MEMORY_BASIC_INFORMATION>());
                             if query_result == 0 {
                                 eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> Failed to query memory information : {}", io::Error::last_os_error());
                             } else {
