@@ -1,11 +1,11 @@
 use std::{io, mem, ptr};
 use std::ffi::CString;
 use std::os::raw::c_char;
-use winapi::shared::minwindef::DWORD;
-use winapi::um::debugapi::{ContinueDebugEvent, WaitForDebugEventEx};
+use winapi::shared::minwindef::LPVOID;
+use winapi::um::debugapi::{ContinueDebugEvent, DebugActiveProcessStop, WaitForDebugEventEx};
 use winapi::um::fileapi::GetFinalPathNameByHandleA;
 use winapi::um::handleapi::CloseHandle;
-use winapi::um::memoryapi::VirtualQueryEx;
+use winapi::um::memoryapi::{VirtualFreeEx, VirtualQueryEx};
 use winapi::um::minwinbase::*;
 use winapi::um::processthreadsapi::{CreateProcessA, PROCESS_INFORMATION, STARTUPINFOA};
 use winapi::um::winbase::{DEBUG_PROCESS, INFINITE};
@@ -20,10 +20,12 @@ use crate::pefile::function::CR_FUNCTION;
 fn debug_loop(process_handle: HANDLE) {
     unsafe {
         let mut debug_event = mem::zeroed::<DEBUG_EVENT>();
-        let mut dbg_status = DBG_CONTINUE;
         let mut continue_dbg = true;
         while continue_dbg {
-            WaitForDebugEventEx(&mut debug_event, INFINITE);
+            if WaitForDebugEventEx(&mut debug_event, INFINITE) == 0 {
+                eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> failed to WaitForDebugEventEx : {}", io::Error::last_os_error());
+                stop_dbg(process_handle, debug_event);
+            }
             match debug_event.dwDebugEventCode {
                 EXCEPTION_DEBUG_EVENT => {
                     let except_addr = debug_event.u.Exception().ExceptionRecord.ExceptionAddress as u64;
@@ -34,40 +36,31 @@ fn debug_loop(process_handle: HANDLE) {
                             } else if except_addr > BASE_ADDR && OPTION.breakpoint_addr.contains(&(except_addr - BASE_ADDR)) {
                                 handle_point::handle_br(process_handle, debug_event, except_addr, &mut continue_dbg);
                             }
-                            if !continue_dbg {
-                                dbg_status = DBG_TERMINATE_PROCESS;
-                            }
                         }
                         EXCEPTION_SINGLE_STEP | STATUS_WX86_SINGLE_STEP => handle_point::handle_watchpoint(debug_event, process_handle, &mut continue_dbg),
                         EXCEPTION_ARRAY_BOUNDS_EXCEEDED => {
                             eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> The code tries to access an invalid index in the table : {:#x}", debug_event.u.Exception().ExceptionRecord.ExceptionAddress as u64);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_DATATYPE_MISALIGNMENT => {
                             eprintln!("[{ERR_COLOR}Critical{RESET_COLOR}] -> An alignment problem occurred at address {:#x} and the system does not provide alignment", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_FLT_DENORMAL_OPERAND => {
                             eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> One of the operands of a floating point operation is too small to be considered a floating point at address {:#x}", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_FLT_DIVIDE_BY_ZERO => {
                             eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> The thread attempted to divide a floating point value by a floating point divisor of zero at address {:#x}", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_FLT_INEXACT_RESULT => {
                             eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> The result of a floating point operation cannot be represented exactly as a decimal fraction at address {:#x}", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_FLT_INVALID_OPERATION => {
                             eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> An error with floating point numbers occurred at address {:#x}", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_FLT_OVERFLOW =>
                             eprintln!("[{WAR_COLOR}Warning{RESET_COLOR}] -> A floating point operation resulted in a value too large to represent at address {:#x}", except_addr),
@@ -75,12 +68,10 @@ fn debug_loop(process_handle: HANDLE) {
                         EXCEPTION_ILLEGAL_INSTRUCTION => {
                             eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> bad instruction at address {:#x}", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_STACK_OVERFLOW => {
                             eprintln!("[{ERR_COLOR}Critical{RESET_COLOR}] -> stack overflow at address {:#x}", except_addr);
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         EXCEPTION_ACCESS_VIOLATION => {
                             let access_type = debug_event.u.Exception().ExceptionRecord.ExceptionInformation[0];
@@ -117,7 +108,6 @@ fn debug_loop(process_handle: HANDLE) {
                                 });
                             }
                             continue_dbg = false;
-                            dbg_status = DBG_TERMINATE_PROCESS;
                         }
                         _ => {}
                     }
@@ -149,7 +139,7 @@ fn debug_loop(process_handle: HANDLE) {
                     let dll_base = debug_event.u.LoadDll().lpBaseOfDll;
                     let h_file = debug_event.u.LoadDll().hFile;
                     let mut buffer: [c_char; winapi::shared::minwindef::MAX_PATH] = [0; winapi::shared::minwindef::MAX_PATH];
-                    let len = GetFinalPathNameByHandleA(h_file, buffer.as_mut_ptr(), winapi::shared::minwindef::MAX_PATH as DWORD, 0);
+                    let len = GetFinalPathNameByHandleA(h_file, buffer.as_mut_ptr(), winapi::shared::minwindef::MAX_PATH as u32, 0);
                     if len > 0 {
                         let path = std::slice::from_raw_parts(buffer.as_ptr() as *const u8, len as usize);
                         if let Ok(cstr) = std::str::from_utf8(path) {
@@ -176,10 +166,32 @@ fn debug_loop(process_handle: HANDLE) {
                 },
                 _ => {}
             }
-            ContinueDebugEvent(debug_event.dwProcessId, debug_event.dwThreadId, dbg_status);
+            if continue_dbg {
+                if ContinueDebugEvent(debug_event.dwProcessId, debug_event.dwThreadId, DBG_CONTINUE) == 0 {
+                    eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> failed to ContinueDebugEvent : {}", io::Error::last_os_error());
+                    stop_dbg(process_handle, debug_event);
+                }
+            }else {
+                stop_dbg(process_handle, debug_event);
+            }
         }
     }
 }
+
+
+
+
+unsafe fn stop_dbg(process_handle: HANDLE, debug_event: DEBUG_EVENT) {
+    for crt_func in CR_FUNCTION.iter_mut() {
+        let addr_v = crt_func.address as LPVOID;
+        if VirtualFreeEx(process_handle, addr_v, 0, MEM_RELEASE) == 0 {
+            eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> Error when freeing memory allocated to address {:#x} : {}", crt_func.address, io::Error::last_os_error());
+        }
+        crt_func.address = 0;
+    }
+    DebugActiveProcessStop(debug_event.dwProcessId);
+}
+
 
 
 
