@@ -7,11 +7,11 @@ use crate::dbg::{BASE_ADDR, SAVEINSN, SaveInsn};
 use crate::pefile::function::CrtFunc;
 use crate::pefile::NT_HEADER;
 use crate::symbol;
-use crate::log::*;
-
+use crate::utils::*;
 pub mod breakpoint;
 pub mod watchpoint;
 pub mod stack;
+
 
 pub unsafe fn set_addr_over(process_handle: HANDLE, over_func: u64) {
     let mut old_protect = 0;
@@ -79,7 +79,7 @@ pub unsafe fn set_cr_function(process_handle: HANDLE, crt_func: &mut CrtFunc) {
         sym.offset = addr_func as i64;
     }
     let mut written = 0;
-    if WriteProcessMemory(process_handle, addr_func, code.as_ptr() as LPVOID, code.len(), &mut written) == 0 || written != 11 {
+    if WriteProcessMemory(process_handle, addr_func, code.as_ptr() as LPVOID, code.len(), &mut written) == 0 || written != code.len() {
         eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> error when writing bytes of function {} at address {:#x} : {}", crt_func.name, crt_func.address, io::Error::last_os_error());
         return;
     }
