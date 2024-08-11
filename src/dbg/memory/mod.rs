@@ -7,7 +7,7 @@ use crate::dbg::{BASE_ADDR, SAVEINSN, SaveInsn};
 use crate::pefile::function::CrtFunc;
 use crate::pefile::NT_HEADER;
 use crate::symbol;
-use crate::utils::*;
+use crate::log::*;
 pub mod breakpoint;
 pub mod watchpoint;
 pub mod stack;
