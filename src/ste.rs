@@ -1,5 +1,5 @@
 use winapi::um::winnt::RUNTIME_FUNCTION;
-use crate::log::*;
+use crate::utils::*;
 use crate::pefile::function::FUNC_INFO;
 use crate::symbol::SYMBOLS_V;
 

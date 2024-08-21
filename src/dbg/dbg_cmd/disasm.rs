@@ -5,11 +5,13 @@ use winapi::shared::ntdef::HANDLE;
 use winapi::um::memoryapi::{ReadProcessMemory, VirtualProtectEx};
 use winapi::um::winnt::{CONTEXT, PAGE_EXECUTE_READWRITE};
 use crate::dbg::BASE_ADDR;
-use crate::dbg::dbg_cmd::{info_reg, usages};
-use crate::log::{ERR_COLOR, RESET_COLOR, str_to};
-use crate::{command, symbol};
-use crate::log::*;
+use crate::dbg::dbg_cmd::usages;
+use crate::utils::{ERR_COLOR, RESET_COLOR, str_to};
+use crate::symbol;
+use crate::utils::*;
 use crate::pefile::function::FUNC_INFO;
+
+
 
 pub fn handle_disasm(linev: &[&str], process_handle: HANDLE, ctx: CONTEXT) {
     if linev.len() < 2 {
@@ -20,21 +22,11 @@ pub fn handle_disasm(linev: &[&str], process_handle: HANDLE, ctx: CONTEXT) {
     let addr_str = linev[1];
     let count_str = linev.get(2);
 
-    let addr = match command::breakpoint::get_addr_br(addr_str) {
+    let addr = match get_addr_va(addr_str, ctx) {
         Ok(addr) => addr,
         Err(e) => {
-            if e.contains("invalid target") {
-                let addr = info_reg::get_value_with_reg(addr_str, ctx);
-                if addr == 0 {
-                    eprintln!("{}Invalid target: '{}'{}", ERR_COLOR, addr_str, RESET_COLOR);
-                    return;
-                } else {
-                    addr
-                }
-            }else {
-                eprintln!("{e}");
-                return;
-            }
+            eprintln!("{e}");
+            return;
         }
     };
 
@@ -83,7 +75,6 @@ pub fn handle_disasm(linev: &[&str], process_handle: HANDLE, ctx: CONTEXT) {
             println!("{ADDR_COLOR}{:#x}:", instruction.ip());
             println!("{:#x}:                                        {SYM_COLOR}{}:{RESET_COLOR}", instruction.ip(), sym.name);
         }
-
         let mut instructions = instruction.to_string();
         if instruction.is_ip_rel_memory_operand() {
             if let Some(sym) = unsafe { symbol::SYMBOLS_V.symbol_file.iter().find(|s| s.offset + BASE_ADDR as i64 == instruction.ip_rel_memory_address() as i64) } {

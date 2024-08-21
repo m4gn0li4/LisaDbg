@@ -8,10 +8,10 @@ use libloading::Library;
 use once_cell::sync::Lazy;
 use winapi::um::winnt::{CONTEXT, WOW64_CONTEXT};
 use crate::{OPTION, pefile};
-use crate::dbg::dbg_cmd::info_reg::{ToValue, Value};
+use crate::dbg::dbg_cmd::x64::info_reg::{ToValue, Value};
 use crate::dbg::{BASE_ADDR, memory, RealAddr};
-use crate::dbg::dbg_cmd::mode_32::info_reg::ToValue32;
-use crate::log::*;
+use crate::dbg::dbg_cmd::x32::info_reg::ToValue32;
+use crate::utils::*;
 
 
 
@@ -131,7 +131,7 @@ pub fn load_symbol() {
         }
         if let Err(e) = dwarf::target_dwarf_info(&*pefile::section::SECTION_VS) {
             eprintln!("{ERR_COLOR}Error target symbol dwarf : {e}{RESET_COLOR}");
-            return;
+            return
         }
         pdb::target_symbol();
         if SYMBOLS_V.symbol_type != SymbolType::Un {

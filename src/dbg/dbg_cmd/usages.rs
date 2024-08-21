@@ -1,4 +1,4 @@
-use crate::log::*;
+use crate::utils::*;
 use crate::usage;
 use crate::usage::{USAGE_INFO, USAGE_SET_REG};
 

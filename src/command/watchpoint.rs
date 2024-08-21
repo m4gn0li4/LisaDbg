@@ -2,11 +2,11 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use winapi::um::winnt::{CONTEXT, WOW64_CONTEXT};
-use crate::log::{ERR_COLOR, RESET_COLOR, str_to, VALID_COLOR};
+use crate::utils::{ERR_COLOR, RESET_COLOR, str_to, VALID_COLOR};
 use crate::{OPTION, symbol, usage};
 use crate::dbg::{BASE_ADDR, memory, RealAddr};
-use crate::dbg::dbg_cmd::info_reg::{ToValue, Value};
-use crate::dbg::dbg_cmd::mode_32::info_reg::ToValue32;
+use crate::dbg::dbg_cmd::x64::info_reg::{ToValue, Value};
+use crate::dbg::dbg_cmd::x32::info_reg::ToValue32;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum FlagTypeMem {

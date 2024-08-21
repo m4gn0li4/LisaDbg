@@ -1,5 +1,5 @@
 use crate::usage;
-use crate::log::*;
+use crate::utils::*;
 
 
 pub static mut SKIP_ADDR: Vec<u64> = Vec::new();

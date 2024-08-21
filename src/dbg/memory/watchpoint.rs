@@ -8,7 +8,7 @@ use winapi::um::winnt::*;
 use crate::command::watchpoint::Watchpts;
 use crate::{OPTION, pefile};
 use crate::dbg::RealAddr;
-use crate::log::*;
+use crate::utils::*;
 
 
 pub fn clear_dreg(ctx: &mut CONTEXT, reg_index: usize) {

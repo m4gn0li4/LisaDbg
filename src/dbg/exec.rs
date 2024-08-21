@@ -75,6 +75,7 @@ fn debug_loop(process_handle: HANDLE) {
                         }
                         EXCEPTION_ACCESS_VIOLATION => {
                             let access_type = debug_event.u.Exception().ExceptionRecord.ExceptionInformation[0];
+                            let drs = debug_event.u.Exception().ExceptionRecord.ExceptionInformation[1];
                             let access_str = match access_type {
                                 0 => "read",
                                 1 => "write",
@@ -82,30 +83,12 @@ fn debug_loop(process_handle: HANDLE) {
                                 _ => "unknown",
                             };
                             let mut mem_info: MEMORY_BASIC_INFORMATION = mem::zeroed();
-                            let query_result = VirtualQueryEx(process_handle, except_addr as LPVOID, &mut mem_info, mem::size_of::<MEMORY_BASIC_INFORMATION>());
+                            let query_result = VirtualQueryEx(process_handle, drs as LPVOID, &mut mem_info, mem::size_of::<MEMORY_BASIC_INFORMATION>());
                             if query_result == 0 {
                                 eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> Failed to query memory information : {}", io::Error::last_os_error());
                             } else {
-                                eprintln!("[{ERR_COLOR}Critical{RESET_COLOR}] -> Memory access violation at address {:#x} with permissions: '{access_str}'", except_addr);
-                                eprintln!("------------------------------------> Memory information :");
-                                eprintln!("  Base Address   : {:#x}", mem_info.BaseAddress as usize);
-                                eprintln!("  Allocation Base: {:#x}", mem_info.AllocationBase as usize);
-                                eprintln!("  Region Size    : {}", mem_info.RegionSize);
-                                eprintln!("  State          : {}", if mem_info.State == MEM_COMMIT { "Committed" } else { "Reserved" });
-                                eprintln!("  Protect        : {}", match mem_info.Protect {
-                                    PAGE_READONLY => "Read Only",
-                                    PAGE_READWRITE => "Read/Write",
-                                    PAGE_EXECUTE => "Execute",
-                                    PAGE_EXECUTE_READ => "Execute/Read",
-                                    PAGE_EXECUTE_READWRITE => "Execute/Read/Write",
-                                    _ => "Unknown",
-                                });
-                                eprintln!("  Type        : {}", match mem_info.Type {
-                                    MEM_IMAGE => "Image",
-                                    MEM_MAPPED => "Mapped",
-                                    MEM_PRIVATE => "Private",
-                                    _ => "Unknown",
-                                });
+                                eprintln!("[{ERR_COLOR}Critical{RESET_COLOR}] -> memory access violation for '{access_str}' at address {:#x} caused by instruction at address {:#x}", drs, except_addr);
+                                memory::mem_info::print_mem_info(mem_info);
                             }
                             continue_dbg = false;
                         }
@@ -148,12 +131,12 @@ fn debug_loop(process_handle: HANDLE) {
                             } else {
                                 cstr
                             };
-                            println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address: {:x?} has been loaded ;{}", dll_base, display_path);
+                            println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address: {:#x} has been loaded ;{}", dll_base as u64, display_path);
                         } else {
-                            println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address: {:x?} has been loaded", dll_base);
+                            println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address: {:#x} has been loaded", dll_base as u64);
                         }
                     } else {
-                        println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address: {:x?} has been loaded", dll_base);
+                        println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address: {:#x} has been loaded", dll_base as u64);
                     }
                 }
                 UNLOAD_DLL_DEBUG_EVENT =>  println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Dll at address {:x?} has been unloaded", debug_event.u.UnloadDll().lpBaseOfDll),

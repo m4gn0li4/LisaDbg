@@ -1,7 +1,7 @@
 use std::io;
 use anyhow::Error;
-use crate::{command, OPTION, usage};
-use crate::log::*;
+use crate::{OPTION, usage};
+use crate::utils::*;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum ModIntpr {
@@ -71,7 +71,7 @@ fn get_addr_with_mod(target: &str, mod_intpr: ModIntpr) -> anyhow::Result<u64, E
         Ok(str_to::<u64>(target)?)
     }
     else {
-        match command::breakpoint::get_addr_br(target) {
+        match get_addr_br(target) {
             Ok(value) => Ok(value),
             Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e).into()),
         }

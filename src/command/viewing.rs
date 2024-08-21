@@ -4,7 +4,7 @@ use crate::{OPTION, symbol, usage};
 use crate::command::skip::SKIP_ADDR;
 use crate::command::stret::BREAK_RET;
 use crate::dbg::{BASE_ADDR, memory, RealAddr};
-use crate::log::*;
+use crate::utils::*;
 use crate::pefile::function::{CR_FUNCTION, FUNC_INFO};
 use crate::pefile::section::SECTION_VS;
 use crate::symbol::SYMBOLS_V;
@@ -25,9 +25,14 @@ pub fn view_brpkt(linev: &[&str], ctx: CONTEXT) {
         "watchpoint" | "watch" | "w" => print_watchpt(ctx),
         "function" | "func" | "f" => print_function(),
         "section" | "sec" => print_section(),
+        "hmodule" | "module" => {},
         _ => eprintln!("{ERR_COLOR}unknow option : '{elm}'{RESET_COLOR}"),
     }
 }
+
+
+
+
 
 
 

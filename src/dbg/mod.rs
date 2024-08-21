@@ -1,6 +1,6 @@
 use winapi::um::winnt::{CONTEXT, WOW64_CONTEXT};
 use crate::OPTION;
-use crate::log::*;
+use crate::utils::*;
 
 pub mod dbg_cmd;
 pub mod memory;
@@ -8,7 +8,6 @@ mod handle_point;
 mod exec;
 
 const STATUS_WX86_BREAKPOINT: u32 = 0x4000001f;
-
 const STATUS_WX86_SINGLE_STEP: u32 = 0x4000001e;
 
 
@@ -24,6 +23,8 @@ pub trait RealAddr {
     fn real_addr64(&self, ctx: CONTEXT) -> u64;
     fn real_addr32(&self, ctx: WOW64_CONTEXT) -> u32;
 }
+
+
 
 pub static mut BASE_ADDR: u64 = 0;
 

@@ -3,7 +3,7 @@ use crate::command::viewing;
 use crate::dbg::{RealAddr};
 use crate::dbg::dbg_cmd::usages;
 use crate::dbg::memory::stack::LEN;
-use crate::log::*;
+use crate::utils::*;
 use crate::symbol::SYMBOLS_V;
 use crate::usage::USAGE_SYM_INFO;
 

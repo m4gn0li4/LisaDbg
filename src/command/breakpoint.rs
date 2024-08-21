@@ -1,8 +1,8 @@
-use crate::{usage, log::*};
+use crate::{usage, utils::*};
 use crate::OPTION;
 use winapi::shared::ntdef::HANDLE;
+use winapi::um::winnt::{CONTEXT, WOW64_CONTEXT};
 use crate::dbg::{BASE_ADDR, memory};
-use crate::symbol::SYMBOLS_V;
 
 pub fn handle_breakpts(linev: &[&str]) {
     if linev.len() == 2 {
@@ -22,33 +22,12 @@ pub fn handle_breakpts(linev: &[&str]) {
 
 
 
-
-
-pub fn get_addr_br(addr_str: &str) -> Result<u64, String> {
-    match str_to::<u64>(addr_str) {
-        Ok(value) => Ok(value),
-        Err(_) => unsafe {
-            if let Some(sym) = SYMBOLS_V.symbol_file.iter().find(|s|s.name == addr_str) {
-                if sym.offset > 0 {
-                    Ok(sym.offset as u64)
-                }else {
-                    return Err(format!("{ERR_COLOR}the specified symbol cannot have a negative offset{RESET_COLOR}"));
-                }
-            }else {
-                return Err(format!("{ERR_COLOR}invalid target : {}{RESET_COLOR}", addr_str));
-            }
-        }
-    }
-}
-
-
-
-pub fn handle_breakpoint_proc(linev: &[&str], process_handle: HANDLE) {
+pub fn handle_breakpoint_proc(linev: &[&str], process_handle: HANDLE, ctx: CONTEXT) {
     if linev.len() != 2 {
         eprintln!("{}", usage::USAGE_BRPT);
     } else {
         let addr_str = linev[1];
-        let addr = match get_addr_br(addr_str) {
+        let addr = match get_addr_va(addr_str, ctx) {
             Ok(value) => value,
             Err(e) => {
                 eprintln!("{e}");
@@ -58,6 +37,26 @@ pub fn handle_breakpoint_proc(linev: &[&str], process_handle: HANDLE) {
         unsafe {
             OPTION.breakpoint_addr.push(addr);
             memory::breakpoint::set_breakpoint(process_handle, addr)
+        }
+    }
+}
+
+
+pub fn handle_breakpoint_proc32(linev: &[&str], process_handle: HANDLE, ctx: WOW64_CONTEXT) {
+    if linev.len() != 2 {
+        eprintln!("{}", usage::USAGE_BRPT);
+    } else {
+        let addr_str = linev[1];
+        let addr = match get_addr_va32(addr_str, ctx) {
+            Ok(value) => value,
+            Err(e) => {
+                eprintln!("{e}");
+                return;
+            }
+        };
+        unsafe {
+            OPTION.breakpoint_addr.push(addr as u64);
+            memory::breakpoint::set_breakpoint(process_handle, addr as u64)
         }
     }
 }

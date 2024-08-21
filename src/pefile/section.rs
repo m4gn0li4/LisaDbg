@@ -33,8 +33,7 @@ pub unsafe fn parse_section(nt_headers: NtHeaders, file: &mut File) -> Result<()
         NtHeaders::Headers32(nt_headers_32) => {
             let num_sec = nt_headers_32.FileHeader.NumberOfSections as usize;
             let smptroffs = nt_headers_32.FileHeader.PointerToSymbolTable as u64 + (nt_headers_32.FileHeader.NumberOfSymbols * 18) as u64;
-            let section_h = read_section_headers(file, num_sec)?;
-            for section in section_h {
+            for section in read_section_headers(file, num_sec)? {
                 process_section(file, section, smptroffs)?;
             }
             Ok(())
@@ -42,8 +41,7 @@ pub unsafe fn parse_section(nt_headers: NtHeaders, file: &mut File) -> Result<()
         NtHeaders::Headers64(nt_headers_64) => {
             let num_sec = nt_headers_64.FileHeader.NumberOfSections as usize;
             let smptroffs = nt_headers_64.FileHeader.PointerToSymbolTable as u64 + (nt_headers_64.FileHeader.NumberOfSymbols * 18) as u64;
-            let section_h = read_section_headers(file, num_sec)?;
-            for section in section_h {
+            for section in read_section_headers(file, num_sec)? {
                 process_section(file, section, smptroffs)?;
             }
             Ok(())

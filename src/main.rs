@@ -1,5 +1,5 @@
 mod command;
-mod log;
+mod utils;
 mod dbg;
 mod symbol;
 mod ste;
@@ -13,14 +13,14 @@ use once_cell::sync::Lazy;
 use crate::command::watchpoint::Watchpts;
 
 #[derive(Debug, StructOpt, Default)]
-#[structopt(name = "LisaDbg")]
+#[structopt(name = "LisaDbg", version = "2.0 beta")]
 struct Dbgoption {
     file: Option<String>,
     #[structopt(short = "b", long = "breakpoint", help = "to place a breakpoint at an address (RVA)")]
     breakpoint_addr: Vec<u64>,
     #[structopt(short = "a", long = "arg", help = "set arguments for script to debug")]
     arg: Option<String>,
-    #[structopt(long = "exec", help = "for execute a cmd specified before running dbg")]
+    #[structopt(long = "exec", help = "to execute a cmd specified before running dbg")]
     exec_cmd: Vec<String>,
     #[structopt(short = "w", long = "watchpoint", help = "Set a watchpoint in the format '[--memory=<zone>] [--access=<rights>] <offset>")]
     watchpts: Vec<Watchpts>
@@ -43,7 +43,13 @@ static mut OPTION: Lazy<Dbgoption> = Lazy::new(||Dbgoption::from_args());
 
 
 fn main() {
-    unsafe { OPTION.exec_cmd() }
+    unsafe {
+        if let Some(file) = &OPTION.file {
+            let intp = format!("file {file}");
+            command::file::handle_change_file(&intp.split_whitespace().collect::<Vec<&str>>(), &intp);
+        }
+        OPTION.exec_cmd()
+    }
     ctx_before_run();
 }
 
@@ -85,10 +91,11 @@ fn handle_cmd(linev: &[&str], input: &str) {
         Some(&"clear") => command::clear_cmd::clear_cmd(),
         Some(&"remove") => command::remover::remove_element(&linev),
         Some(&"sym-info") => unsafe {command::sym::handle_sym_info(&linev, std::mem::zeroed())}
+        Some(&"load") => command::load::load(&linev),
         Some(&"add") => command::little_secret::add_op(&linev),
         Some(&"sub") => command::little_secret::sub_op(&linev),
-        None => eprintln!("{}please enter a command{}", log::ERR_COLOR, log::RESET_COLOR),
-        _ => eprintln!("{}command '{}' is unknow{}", log::ERR_COLOR, cmd.unwrap(), log::RESET_COLOR)
+        None => eprintln!("{}please enter a command{}", utils::ERR_COLOR, utils::RESET_COLOR),
+        _ => eprintln!("{}command '{}' is unknow{}", utils::ERR_COLOR, cmd.unwrap(), utils::RESET_COLOR)
     }
 }
 

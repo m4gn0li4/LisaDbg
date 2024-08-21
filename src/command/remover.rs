@@ -2,7 +2,7 @@ use std::{io, ptr};
 use winapi::shared::minwindef::LPVOID;
 use winapi::um::memoryapi::{ReadProcessMemory, WriteProcessMemory};
 use winapi::um::winnt::{CONTEXT, HANDLE};
-use crate::log::*;
+use crate::utils::*;
 use crate::{OPTION, usage};
 use crate::command::{hook, skip};
 use crate::command::stret::BREAK_RET;

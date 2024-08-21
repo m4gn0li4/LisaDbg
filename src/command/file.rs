@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use crate::{OPTION, pefile, symbol};
-use crate::log::*;
+use crate::utils::*;
 
 pub fn handle_change_file(linev: &[&str], line: &str) {
     if linev.len() > 1 {

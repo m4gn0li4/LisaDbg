@@ -1,6 +1,6 @@
 use winapi::um::winnt::{IMAGE_DATA_DIRECTORY, RUNTIME_FUNCTION};
 use std::{mem, slice};
-use crate::log::*;
+use crate::utils::*;
 use crate::pefile;
 
 

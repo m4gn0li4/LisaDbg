@@ -5,7 +5,7 @@ use winapi::shared::minwindef::{LPVOID, TRUE};
 use winapi::shared::ntdef::{HANDLE, PVOID};
 use winapi::um::dbghelp::{AddrModeFlat, STACKFRAME64, StackWalk64, SymInitializeW};
 use winapi::um::winnt::{CONTEXT, WOW64_CONTEXT};
-use crate::log::{ERR_COLOR, RESET_COLOR};
+use crate::utils::{ERR_COLOR, RESET_COLOR};
 use crate::symbol::{SYMBOL_PE, SymbolFile, SYMBOLS_V};
 
 pub static mut ST_FRAME: Vec<STACKFRAME64> = Vec::new();

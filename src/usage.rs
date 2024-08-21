@@ -1,4 +1,4 @@
-use crate::log::{ERR_COLOR, RESET_COLOR, VALID_COLOR};
+use crate::utils::{ERR_COLOR, RESET_COLOR, VALID_COLOR};
 
 pub const USAGE_SKIP: &str = "\x1b[32mUSAGE: skip [flag] <FUNCTION>\
         \nflag:\

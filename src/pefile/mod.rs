@@ -72,7 +72,8 @@ pub unsafe fn parse_header() -> Result<(), io::Error> {
         crate::symbol::IMAGE_BASE = nt_header_64.OptionalHeader.ImageBase;
         section::parse_section(NtHeaders::Headers64(nt_header_64), &mut file)?;
         function::parse_pdata(nt_header_64.OptionalHeader.DataDirectory[3]);
-    } else if file_header.Machine == 0x14c {
+    }
+    else if file_header.Machine == 0x14c {
         let mut nt_header_32: IMAGE_NT_HEADERS32 = std::mem::zeroed();
         file.seek(SeekFrom::Start(dos_header.e_lfanew as u64))?;
         file.read_exact(slice::from_raw_parts_mut(&mut nt_header_32 as *mut _ as *mut u8, std::mem::size_of::<IMAGE_NT_HEADERS64>()))?;

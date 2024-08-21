@@ -2,7 +2,7 @@ use crate::{Dbgoption, OPTION, pefile, symbol, usage};
 use crate::command::{hook, skip, stret};
 use crate::pefile::function;
 use crate::symbol::{Symbols, SYMBOLS_V};
-use crate::log::*;
+use crate::utils::*;
 
 pub fn handle_reset(linev: &[&str]) {
     if linev.len() == 2 {

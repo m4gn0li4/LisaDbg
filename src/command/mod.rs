@@ -8,10 +8,11 @@ pub mod sym;
 pub mod skip;
 pub mod stret;
 pub mod remover;
+pub mod load;
 
 pub mod arg {
     use crate::{OPTION, usage};
-    use crate::log::*;
+    use crate::utils::*;
 
     pub fn set_argument(linev: &[&str], line: &str) {
         if linev.len() < 2 {
@@ -23,8 +24,11 @@ pub mod arg {
     }
 }
 
+
+
+
 pub mod create_func {
-    use crate::log::*;
+    use crate::utils::*;
     use crate::pefile::function;
     use crate::pefile::function::CrtFunc;
     use crate::{symbol, usage};
@@ -60,7 +64,7 @@ pub mod create_func {
 
 
 pub mod with_va {
-    use crate::log::*;
+    use crate::utils::*;
     pub fn handle_calcule_va(linev: &[&str]) {
         if linev.len() != 2 {
             eprintln!("USAGE: clva <rva>");
@@ -103,7 +107,7 @@ pub mod clear_cmd {
 
 
 pub mod little_secret {
-    use crate::log::*;
+    use crate::utils::*;
 
     pub fn sub_op(linev: &[&str]) {
         if linev.len() != 3 {

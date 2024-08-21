@@ -5,7 +5,7 @@ use winapi::um::memoryapi::*;
 use winapi::um::winnt::PAGE_EXECUTE_READWRITE;
 use crate::dbg::{BASE_ADDR, SAVEINSN, SaveInsn};
 use crate::OPTION;
-use crate::log::*;
+use crate::utils::*;
 use crate::pefile::function::FUNC_INFO;
 
 pub unsafe fn restore_byte_of_brkpt(process_handle: HANDLE, breakpoint_addr: u64) {

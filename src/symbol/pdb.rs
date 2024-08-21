@@ -8,7 +8,7 @@ use crate::symbol::SYMBOL_PE;
 pub struct SymbolsPdb {
     pub size: u32,
     pub value: u64,
-    pub  address: u64,
+    pub address: u64,
     pub tag: u32,
     pub name: *const c_char,
     pub filename: *const c_char,
@@ -51,6 +51,9 @@ pub unsafe fn target_symbol() {
 
 pub fn get_reg_with_reg_field(reg_field: u32) -> String {
     let res = match reg_field {
+        17 => "eax",
+        18 => "ecx",
+        19 => "edx",
         328 => "rax",
         329 => "rbx",
         330 => "rcx",

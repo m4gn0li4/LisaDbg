@@ -7,10 +7,14 @@ use crate::dbg::{BASE_ADDR, SAVEINSN, SaveInsn};
 use crate::pefile::function::CrtFunc;
 use crate::pefile::NT_HEADER;
 use crate::symbol;
-use crate::log::*;
+use crate::utils::*;
+
 pub mod breakpoint;
 pub mod watchpoint;
 pub mod stack;
+pub mod mem_info;
+pub mod deref_mem;
+pub mod set_memory;
 
 
 pub unsafe fn set_addr_over(process_handle: HANDLE, over_func: u64) {

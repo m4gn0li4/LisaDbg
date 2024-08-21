@@ -8,7 +8,7 @@ use winapi::um::winbase::{Wow64GetThreadContext, Wow64SetThreadContext};
 use winapi::um::winnt::{CONTEXT, CONTEXT_ALL, HANDLE, THREAD_GET_CONTEXT, THREAD_SET_CONTEXT, WOW64_CONTEXT, WOW64_CONTEXT_ALL};
 use crate::dbg::{BASE_ADDR, dbg_cmd, memory};
 use crate::pefile::NT_HEADER;
-use crate::log::*;
+use crate::utils::*;
 use crate::{pefile, symbol};
 use crate::command::hook::Hook;
 
@@ -27,7 +27,7 @@ pub unsafe fn handle_br(process_handle: HANDLE, debug_event: DEBUG_EVENT, breakp
             ctx.ContextFlags = CONTEXT_ALL;
             if GetThreadContext(h_thread, &mut ctx) != 0 {
                 ctx.Rip -= 1;
-                dbg_cmd::cmd_wait(&mut ctx, process_handle,h_thread, continue_dbg);
+                dbg_cmd::x64::cmd_wait(&mut ctx, process_handle,h_thread, continue_dbg);
                 if SetThreadContext(h_thread, &ctx) == 0 {
                     eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> error when setting thread context: {}", io::Error::last_os_error());
                 }
@@ -40,7 +40,7 @@ pub unsafe fn handle_br(process_handle: HANDLE, debug_event: DEBUG_EVENT, breakp
             ctx.ContextFlags = WOW64_CONTEXT_ALL;
             if Wow64GetThreadContext(h_thread, &mut ctx) != 0 {
                 ctx.Eip -= 1;
-                dbg_cmd::mode_32::cmd_wait32(&mut ctx, process_handle, h_thread, continue_dbg);
+                dbg_cmd::x32::cmd_wait32(&mut ctx, process_handle, h_thread, continue_dbg);
                 if Wow64SetThreadContext(h_thread, &ctx) == 0 {
                     eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> error when setting thread context: {}", io::Error::last_os_error());
                 }
@@ -136,7 +136,7 @@ pub unsafe fn handle_watchpoint(debug_event: DEBUG_EVENT, process_handle: HANDLE
                     }
                     let except_addr = debug_event.u.Exception().ExceptionRecord.ExceptionAddress;
                     println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> except address {:#x}, there was access to the address {name}", except_addr as u64);
-                    dbg_cmd::cmd_wait(&mut ctx, process_handle, h_thread, continue_dbg);
+                    dbg_cmd::x64::cmd_wait(&mut ctx, process_handle, h_thread, continue_dbg);
                     if SetThreadContext(h_thread, &ctx) == 0 {
                         eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> failed to set ctx of thread, all modification of ctx is useless : {}", io::Error::last_os_error());
                     }
@@ -168,7 +168,7 @@ pub unsafe fn handle_watchpoint(debug_event: DEBUG_EVENT, process_handle: HANDLE
                     }
                     let except_addr = debug_event.u.Exception().ExceptionRecord.ExceptionAddress;
                     println!("[{VALID_COLOR}Debug{RESET_COLOR}] -> except address :{:#x} watchpoint caused by the instruction at the address {name}", except_addr as u64);
-                    dbg_cmd::mode_32::cmd_wait32(&mut ctx, process_handle, h_thread, continue_dbg);
+                    dbg_cmd::x32::cmd_wait32(&mut ctx, process_handle, h_thread, continue_dbg);
                     if Wow64SetThreadContext(h_thread, &ctx) == 0 {
                         eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> failed to set ctx of thread, all modification of ctx is useless : {}", io::Error::last_os_error());
                     }
