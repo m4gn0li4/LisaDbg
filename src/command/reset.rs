@@ -1,0 +1,66 @@
+use crate::{Dbgoption, OPTION, pefile, symbol, usage};
+use crate::command::{hook, skip, stret};
+use crate::pefile::function;
+use crate::symbol::{Symbols, SYMBOLS_V};
+use crate::utils::*;
+
+pub fn handle_reset(linev: &[&str]) {
+    if linev.len() == 2 {
+        let opt = linev[1].to_lowercase();
+        let opt = opt.trim_start().trim_end();
+        unsafe {
+            match opt {
+                "file" => {
+                    *SYMBOLS_V = Symbols::default();
+                    OPTION.file = None;
+                    println!("{VALID_COLOR}file context are reset{RESET_COLOR}");
+                },
+                "breakpoint" | "b" =>  {
+                    OPTION.breakpoint_addr.clear();
+                    println!("{VALID_COLOR}all breakpoint are clear{RESET_COLOR}");
+                },
+                "symbol" | "s" => {
+                    *SYMBOLS_V = Symbols::default();
+                    println!("{VALID_COLOR}all symbols have been unloaded{RESET_COLOR}");
+                }
+                "create-function" | "create-func" | "crt-func" => {
+                    function::CR_FUNCTION.clear();
+                    println!("{VALID_COLOR}all function created with cmd 'crt-func' has been deleted{RESET_COLOR}")
+                }
+                "hook" | "ho" => {
+                    hook::HOOK_FUNC.clear();
+                    println!("{VALID_COLOR}all hook set by cmd 'hook' has been deleted{RESET_COLOR}")
+                }
+                "break-ret" | "b-ret" => {
+                    stret::BREAK_RET.clear();
+                    println!("{VALID_COLOR}all the functions traced for their ret were clear{RESET_COLOR}");
+                }
+                "skip" => {
+                    skip::SKIP_ADDR.clear();
+                    println!("{VALID_COLOR}all functions specified with skip have been reset{RESET_COLOR}");
+                }
+                "args" | "arg" | "argv" => {
+                    OPTION.arg = None;
+                    println!("{VALID_COLOR}the arguments have been removed{RESET_COLOR}");
+                }
+                "watchpoint" | "watchpts" | "w" => {
+                    OPTION.watchpts.clear();
+                    println!("{VALID_COLOR}all watchpoint has been removed{RESET_COLOR}");
+                }
+                "all" => {
+                    pefile::NT_HEADER = std::mem::zeroed();
+                    skip::SKIP_ADDR.clear();
+                    stret::BREAK_RET.clear();
+                    function::FUNC_INFO.clear();
+                    function::CR_FUNCTION.clear();
+                    hook::HOOK_FUNC.clear();
+                    *symbol::SYMBOLS_V = Symbols::default();
+                    symbol::IMAGE_BASE = 0;
+                    *OPTION = Dbgoption::default();
+                    println!("{VALID_COLOR}all element is cleared{RESET_COLOR}");
+                },
+                _ => eprintln!("{}", usage::USAGE_RESET)
+            }
+        }
+    }
+}
