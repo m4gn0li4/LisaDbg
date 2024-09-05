@@ -1,6 +1,6 @@
 # LisaDbg
 it's a rust dbg, but this will most likely change in the future,
-it has a small cli interface but the vast majority of available commands are in the context of the app, 
+it has a small cli interface but the vast majority of available commands are in the context of the app
 # here is the cli interface :
 
 ```
