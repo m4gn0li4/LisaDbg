@@ -4,10 +4,11 @@ it has a small cli interface but the vast majority of available commands are in 
 # here is the cli interface :
 
 ```
-LisaDbg 1.0.0
+C:\Users\arach>lisa-dbg -h
+LisaDbg 1.7.0
 
 USAGE:
-    LisaDbg.exe [OPTIONS] [--] [file]
+    lisa-dbg [OPTIONS] [--] [file]
 
 FLAGS:
     -h, --help       Prints help information
@@ -16,7 +17,7 @@ FLAGS:
 OPTIONS:
     -a, --arg <arg>                          set arguments for script to debug
     -b, --breakpoint <breakpoint-addr>...    to place a breakpoint at an address (RVA)
-        --exec <exec-cmd>...                 for execute a cmd specified before running dbg
+        --exec <exec-cmd>...                 to execute a cmd specified before running dbg
     -w, --watchpoint <watchpts>...           Set a watchpoint in the format '[--memory=<zone>] [--access=<rights>]
                                              <offset>
 
@@ -64,10 +65,9 @@ Available commands:
    v, value                    : Display the value of a specified register
    s                           : for load the symbol file (if avaible)
    deref                       : Dereference the value at a specific memory address or register in the target process
-   setr, setreg                : Set a new value to a specified register
    q, quit, break              : Terminate the debugging session. Confirmation required
    base-addr, ba               : Display the base address of the target process
-   setm, setmemory             : Defined a new value at the specified memory address (va) or at the specified register (the register value will be considered as address)
+   set                         : To set something, it can be a register, a value at an address or a memory protection, to find out more type "help set"
    b, breakpoint               : Set a breakpoint at the specified address (rva) or symbol
    reset                       : Reset the state of the debugging session
    cva                         : Calculates the va of a specified rva
@@ -78,9 +78,10 @@ Available commands:
    sym-address                 : for view the symbol address with here name (va)
    disasm                      : to disassemble opcodes from a specified address (va)
    backtrace, frame            : for print the call stack frames for debugging purposes
-   symbol-local, sym-local     : to display all local symbols relating to the current function
+   symbol-local, sym-local     : to display all local symbols relating to the current function (only if the symbol type is pdb)
    address-func, addr-func     : displays current function information
    help                        : Display this help message
+
 
 for more information (if available) just type <command> without its arguments
 ```
