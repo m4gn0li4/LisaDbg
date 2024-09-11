@@ -47,6 +47,7 @@ Available commands:
     watchpoint, watch, w                  Set an observation point to a memory location, if the memory location is on the stack, this must be specified
     sym-info                              displays all information of the specified symbol
     arg, args, argv                       defined the arguments with which the debugger will launch the target program
+    attach                                to attach the debugger to a running process
     help-c                                to display the commands available when the program reaches a breakpoint
     help, h                               Display this help message
 
