@@ -2,6 +2,7 @@ use winapi::shared::ntdef::HANDLE;
 use crate::ste::{find_func_by_addr, get_address};
 use crate::{OPTION, usage, utils::*};
 use crate::dbg::memory;
+use crate::pefile::function::FUNC_INFO;
 
 pub static mut BREAK_RET: Vec<u64> = Vec::new();
 
@@ -26,7 +27,13 @@ pub fn st_return(linev: &[&str]) {
             }
             println!("{VALID_COLOR}a breakpoint will be placed at each return of the function {RESET_COLOR}");
         },
-        None => eprintln!("{ERR_COLOR}unknow target : '{:#x}'{RESET_COLOR}", addr_func),
+        None => {
+            if unsafe{FUNC_INFO.len() == 0}  {
+                eprintln!("{ERR_COLOR}sorry we do not have the necessary information for the functions in the program{RESET_COLOR}");
+            }else {
+                eprintln!("{ERR_COLOR}unknow target : '{:#x}'{RESET_COLOR}", addr_func)
+            }
+        },
     }
 }
 

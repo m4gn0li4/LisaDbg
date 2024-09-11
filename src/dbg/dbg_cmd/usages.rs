@@ -33,6 +33,10 @@ Note:
 "#;
 
 
+
+
+
+
 pub const USAGE_DISASM: &str = r#"Usage: disasm <address/register> [count]
 Description:
   Disassembles a given number of instructions from a specified address (va) or register
@@ -51,18 +55,18 @@ Examples:
 "#;
 
 pub const USAGE_SET_MEM: &str = r#"
-Usage: setm <type> <address/register> <new_value>
+Usage: set mem <type> <address/register> <new_value>
 
 Description:
-    Set the value at a specific memory address or register in the target process.
+    Set the value at a specific memory address in the target process
 
 Arguments:
     <type>            The data type of the value to set. Supported types include:
-                        - int8_t,  uint8_t    : 8bit signed or unsigned integer
-                        - int16_t, uint16_t   : 16bit signed or unsigned integer
-                        - int32_t, uint32_t   : 32bit signed or unsigned integer
-                        - int64_t, uint64_t   : 64bit signed or unsigned integer
-                        - char = uint8_t      : 8bit unsigned integer
+                        - int8_t,  uint8_t,  char   : 8bit signed or unsigned integer
+                        - int16_t, uint16_t, word   : 16bit signed or unsigned integer
+                        - int32_t, uint32_t, dword  : 32bit signed or unsigned integer
+                        - int64_t, uint64_t, qword  : 64bit signed or unsigned integer
+
 
     <address/register>  The memory address or register name whose value will be set.
                         If a register name is provided, its current value will be used as the memory address.
@@ -77,11 +81,11 @@ Note:
 
 
 - Examples:
-    setm uint32_t 0x7ff61a03183a 0xdeadbeef      # Set a 32bit unsigned integer value at address 0x7ff61a03183a
-    setm int64_t rax 1234567890123456            # Set a 64bit signed integer at the address contained in rax
-    setm uint16_t[4] r14  0x12, 'c', 9, "a"      # Set the values "0x12, 'c', 9, 'a'" at the address contained in r14 (each element is cast to uint16_t here)
-    setm uint64_t[2] rax 0x1400000000            # Set the value 0x1400000000 at the address contained in rax (the script will add 0s to imitate a 2nd value)
-    setm char[] rsp "hello world", 0             # Write a string with a null character to the address contained in rsp
+    set memory uint32_t 0x7ff61a03183a 0xdeadbeef      # Set a 32bit unsigned integer value at address 0x7ff61a03183a
+    set mem int64_t rax 1234567890123456               # Set a 64bit signed integer at the address contained in rax
+    set memory uint16_t[4] r14  0x12, 'c', 9, "a"      # Set the values "0x12, 'c', 9, 'a'" at the address contained in r14 (each element is cast to uint16_t here)
+    set mem uint64_t[2] rax 0x1400000000               # Set the value 0x1400000000 at the address contained in rax (the script will add 0s to imitate a 2nd value)
+    set memory char[] rsp "hello world", 0             # Write a string with a null character to the address contained in rsp
 "#;
 
 
@@ -111,6 +115,7 @@ Description
 
 
 
+
 pub fn help(linev: &[&str]) {
     if linev.len() == 1 {
         println!(r#"{VALID_COLOR}
@@ -120,10 +125,9 @@ Available commands:
    v, value                    : Display the value of a specified register
    s                           : for load the symbol file (if avaible)
    deref                       : Dereference the value at a specific memory address or register in the target process
-   setr, setreg                : Set a new value to a specified register
    q, quit, break              : Terminate the debugging session. Confirmation required
    base-addr, ba               : Display the base address of the target process
-   setm, setmemory             : Defined a new value at the specified memory address (va) or at the specified register (the register value will be considered as address)
+   set                         : To set something, it can be a register, a value at an address or a memory protection, to find out more type "help set"
    b, breakpoint               : Set a breakpoint at the specified address (rva) or symbol
    reset                       : Reset the state of the debugging session
    cva                         : Calculates the va of a specified rva
@@ -134,7 +138,7 @@ Available commands:
    sym-address                 : for view the symbol address with here name (va)
    disasm                      : to disassemble opcodes from a specified address (va)
    backtrace, frame            : for print the call stack frames for debugging purposes
-   symbol-local, sym-local     : to display all local symbols relating to the current function
+   symbol-local, sym-local     : to display all local symbols relating to the current function (only if the symbol type is pdb)
    address-func, addr-func     : displays current function information
    help                        : Display this help message
 
@@ -148,8 +152,7 @@ for more information (if available) just type <command> without its arguments{RE
             "v" | "value" => println!("{}", USAGE_INFO),
             "s" | "symbol" => println!("for load the symbol file (if avaible)"),
             "deref" => println!("{}", USAGE_DEREF),
-            "setr" | "setreg" => println!("{}", USAGE_SET_REG),
-            "setm" | "setmemory" => println!("{}", USAGE_SET_MEM),
+            "set" => help_set(&linev),
             "b" | "breakpoint" => println!("{}", usage::USAGE_BRPT),
             "reset" => println!("{}", usage::USAGE_RESET),
             "cva" => println!("Calculates the va of a specified rva"),
@@ -163,5 +166,19 @@ for more information (if available) just type <command> without its arguments{RE
             "help" => println!("Display this help message"),
             _ => {}
         }
+    }
+}
+
+
+fn help_set(linev: &[&str]) {
+    if linev.len() > 2 {
+        match linev[2] {
+            "mem" | "memory" => println!("{}", USAGE_SET_MEM),
+            "reg" | "register" => println!("{}", USAGE_SET_REG),
+            "mem-protect" | "memory-protection" => println!("{}",usage::USAGE_SET_PROTECT),
+            _ => {}
+        }
+    }else {
+        println!("{}", usage::USAGE_SET);
     }
 }

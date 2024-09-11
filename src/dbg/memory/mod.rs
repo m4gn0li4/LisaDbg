@@ -3,7 +3,7 @@ use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::HANDLE;
 use winapi::um::memoryapi::{ReadProcessMemory, VirtualAllocEx, VirtualProtectEx, WriteProcessMemory};
 use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE};
-use crate::dbg::{BASE_ADDR, SAVEINSN, SaveInsn};
+use crate::dbg::{SaveInsn, BASE_ADDR, SAVEINSN};
 use crate::pefile::function::CrtFunc;
 use crate::pefile::NT_HEADER;
 use crate::symbol;
@@ -14,7 +14,8 @@ pub mod watchpoint;
 pub mod stack;
 pub mod mem_info;
 pub mod deref_mem;
-pub mod set_memory;
+mod finder;
+pub mod set;
 
 
 pub unsafe fn set_addr_over(process_handle: HANDLE, over_func: u64) {

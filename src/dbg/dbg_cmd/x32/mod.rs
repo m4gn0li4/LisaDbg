@@ -1,6 +1,6 @@
 mod deref_mem32;
 pub mod info_reg;
-mod modifier32;
+pub mod modifier32;
 mod disasm;
 
 use crate::utils::*;
@@ -56,10 +56,9 @@ pub fn cmd_wait32(ctx: &mut WOW64_CONTEXT, process_handle: HANDLE, h_thread: HAN
             Some(&"c") | Some(&"continue") | Some(&"run") => break,
             Some(&"v") | Some(&"value") => unsafe { info_reg::handle_reg(&linev, *ctx) },
             Some(&"deref") => deref_mem32::handle_deref32(&linev, *ctx, process_handle),
-            Some(&"setr") | Some(&"setreg") => modifier32::register::handle_set_register(&linev, ctx),
             Some(&"q") | Some(&"quit") | Some(&"break") => handle_quit(&mut input, continue_debugging, &mut stop_process),
             Some(&"base-addr") | Some(&"ba") => println!("base address : {VALUE_COLOR}{:#x}{RESET_COLOR}", unsafe { BASE_ADDR }),
-            Some(&"setm") | Some(&"setmemory") => modifier32::set_mem::handle_set_memory(process_handle, *ctx, &linev),
+            Some(&"set") => command::set::set_element32(process_handle, ctx, &linev),
             Some(&"b") | Some(&"breakpoint") => command::breakpoint::handle_breakpoint_proc32(&linev, process_handle, *ctx),
             Some(&"rb") => command::breakpoint::handle_restore_breakpoint_proc(&linev, process_handle),
             Some(&"reset") => command::reset::handle_reset(&linev),
@@ -73,7 +72,7 @@ pub fn cmd_wait32(ctx: &mut WOW64_CONTEXT, process_handle: HANDLE, h_thread: HAN
             Some(&"backtrace") | Some(&"frame") => handle_backtrace(&linev, process_handle, h_thread, ctx),
             Some(&"disasm") => disasm::handle_disasm32(&linev, process_handle, *ctx),
             Some(&"crt-func") => handle_crt_func32(&linev, process_handle),
-            Some(&"sym-info") => command::sym::handle_sym_info(&linev, wow64_context_to_context(*ctx)),
+            Some(&"sym-info") => sym::handle_sym_info(&linev, wow64_context_to_context(*ctx)),
             Some(&"address-function") | Some(&"address-func") | Some(&"addr-func") => print_curr_func(addr_func as u64, wow64_context_to_context(*ctx)),
             Some(&"symbol-local") | Some(&"sym-local") => sym::print_local_sym(wow64_context_to_context(*ctx)),
             Some(&"memory-info") | Some(&"mem-info") => memory::mem_info::handle_mem_info(&linev, process_handle, wow64_context_to_context(*ctx)),

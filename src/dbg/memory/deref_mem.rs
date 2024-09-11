@@ -1,4 +1,5 @@
-use std::{io, mem};
+use std::{io, mem, ptr};
+use std::io::Write;
 use regex::Regex;
 use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::HANDLE;
@@ -7,37 +8,136 @@ use winapi::um::winnt::CONTEXT;
 use crate::dbg::dbg_cmd::x64::info_reg::{ToValue, Value};
 use crate::dbg::dbg_cmd::usages;
 use crate::dbg::RealAddr;
+use crate::pefile::NT_HEADER;
 use crate::utils::*;
 use crate::symbol::SYMBOLS_V;
 
-unsafe fn read_memory<T: std::fmt::LowerHex + Default + Clone>(process_handle: HANDLE, address: usize, size: usize, bytes_read: &mut usize){
-    let r_size = size * mem::size_of::<T>();
-    let mut result = vec![T::default(); size];
-    if ReadProcessMemory(process_handle, address as LPVOID, result.as_mut_ptr() as LPVOID, r_size, bytes_read) == 0 {
-        eprintln!("{ERR_COLOR}failed to read memory : {}{RESET_COLOR}", io::Error::last_os_error());
-        return;
-    }
-    print!("{:#x}: {}{VALUE_COLOR}",address, if size > 1 {"["}else {""});
-    for (i, elm) in result.iter().enumerate() {
-        print!("{:#x}{}", elm, if size > 1 || i != size - 1 {", "} else {""});
-    }
-    println!("{RESET_COLOR}{}", if size > 1 {"]"}else {""});
+
+
+
+trait Print {
+    fn print_value(&self) -> String;
 }
 
 
-unsafe fn read_memory_flt<T: num::Float + std::fmt::Display + Default>(process_handle: HANDLE, address: usize, size: usize, byte_read: &mut usize) {
-    let r_size = size * mem::size_of::<T>();
-    print!("{:#x}: {}{VALUE_COLOR}",address, if size > 1 {"["}else {""});
-    let mut result = vec![T::default(); size];
-    if ReadProcessMemory(process_handle, address as LPVOID, result.as_mut_ptr() as LPVOID, r_size, byte_read) == 0 {
-        eprintln!("{ERR_COLOR}failed to read memory : {}", io::Error::last_os_error());
-        return;
+impl Print for u8 {
+    fn print_value(&self) -> String {
+        format!("{:#x}", self)
     }
-    for (i, elm) in result.iter().enumerate(){
-        print!("{}{}", elm, if size > 1 || i != size - 1 {", "} else {""});
-    }
-    println!("{RESET_COLOR}{}", if size > 1 {"]"}else {""});
 }
+
+
+impl Print for u16 {
+    fn print_value(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
+
+
+impl Print for u32 {
+    fn print_value(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
+
+
+impl Print for u64 {
+    fn print_value(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
+
+
+impl Print for usize {
+    fn print_value(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
+
+
+impl Print for f32 {
+    fn print_value(&self) -> String {
+        format!("{}", self)
+    }
+}
+
+
+impl Print for f64 {
+    fn print_value(&self) -> String {
+        format!("{}", self)
+    }
+}
+
+
+fn format_value<T: std::fmt::Debug + Default + Copy + PartialOrd + std::fmt::Display + std::fmt::LowerHex>(value: T) -> String {
+    if value < T::default() {
+        format!("{}", value)
+    } else {
+        format!("{:#x}", value)
+    }
+}
+
+
+impl Print for i8 {
+    fn print_value(&self) -> String {
+        format_value(*self)
+    }
+}
+
+
+
+impl Print for i16 {
+    fn print_value(&self) -> String {
+        format_value(*self)
+    }
+}
+
+
+impl Print for i32 {
+    fn print_value(&self) -> String {
+        format_value(*self)
+    }
+}
+
+impl Print for i64 {
+    fn print_value(&self) -> String {
+        format_value(*self)
+    }
+}
+
+
+
+
+unsafe fn read_memory<T: Print + Default + Clone>(process_handle: HANDLE, address: usize, count_ptr: usize, size: usize, bytes_read: &mut usize){
+    let r_size = size * mem::size_of::<T>();
+    let mut result = vec![T::default(); size];
+    let ptr_size = NT_HEADER.unwrap().get_size_of_arch();
+    let mut addr_v = address;
+    for i in 0..count_ptr {
+        print!("{BYTES_COLOR}{:#x}{RESET_COLOR} -> ", addr_v);
+        if i == count_ptr-1 {
+            if ReadProcessMemory(process_handle, addr_v as LPVOID, result.as_mut_ptr() as LPVOID, r_size, bytes_read) == 0 {
+                io::stdout().flush().unwrap();
+                eprintln!("{ERR_COLOR}Bad ptr : {}{RESET_COLOR}", io::Error::last_os_error());
+                return;
+            }
+            print!("{}{VALUE_COLOR}", if size > 1 {"\n[\n"}else {""});
+            for (i, elm) in result.iter().enumerate() {
+                println!("{}{}", elm.print_value(), if size > 1 || i != size - 1 {", "} else {""});
+            }
+            print!("{RESET_COLOR}{}", if size > 1 {"]\n"} else {""});
+        }
+        else {
+            if ReadProcessMemory(process_handle, addr_v as LPVOID, ptr::addr_of_mut!(addr_v) as LPVOID, ptr_size, &mut 0) == 0 {
+                io::stdout().flush().unwrap();
+                eprintln!("{ERR_COLOR}bad ptr : {}{RESET_COLOR}", io::Error::last_os_error());
+                return;
+            }
+        }
+    }
+}
+
+
 
 
 pub fn handle_deref(linev: &[&str], ctx: CONTEXT, process_handle: HANDLE) {
@@ -79,11 +179,16 @@ pub fn handle_deref(linev: &[&str], ctx: CONTEXT, process_handle: HANDLE) {
 
 
 
+
+
+
+
+
 pub fn deref_memory(process_handle: HANDLE, dtype: &str, address: usize) -> Result<(), String> {
     let mut bytes_read = 0;
     let re = Regex::new(r"\[(.*?)]").unwrap();
     let mut size = 1;
-    if dtype != "char[]" {
+    if !dtype.contains("str") && !dtype.contains("char[]"){
         for cap in re.captures_iter(dtype) {
             if let Some(numd) = cap.get(1) {
                 match str_to::<usize>(numd.as_str()) {
@@ -96,21 +201,22 @@ pub fn deref_memory(process_handle: HANDLE, dtype: &str, address: usize) -> Resu
         size = 0;
     }
 
-    let types_r = dtype.split('[').next().unwrap_or_default();
+    let types_r = dtype.split('[').next().unwrap_or_default().split('*').next().unwrap_or_default();
+    let count_ptr =  dtype.matches("*").count() + 1;
 
     unsafe {
         match types_r {
-            "uint8_t" | "byte" => read_memory::<u8>(process_handle, address, size, &mut bytes_read),
-            "int8_t" => read_memory::<i8>(process_handle, address, size, &mut bytes_read),
-            "uint16_t" | "word" => read_memory::<u16>(process_handle, address, size, &mut bytes_read),
-            "int16_t" | "short" => read_memory::<i16>(process_handle, address, size, &mut bytes_read),
-            "uint32_t" | "u32" => read_memory::<u32>(process_handle, address, size, &mut bytes_read),
-            "int32_t" | "int" | "long" => read_memory::<i32>(process_handle, address, size, &mut bytes_read),
-            "uint64_t" | "qword" => read_memory::<u64>(process_handle, address, size, &mut bytes_read),
-            "int64_t" => read_memory::<i64>(process_handle, address, size, &mut bytes_read),
-            "float" | "f32" => read_memory_flt::<f32>(process_handle, address, size, &mut bytes_read),
-            "double" | "f64" => read_memory_flt::<f64>(process_handle, address, size, &mut bytes_read),
-            "char" => read_string(process_handle, address, size,  &mut bytes_read),
+            "uint8_t" | "byte" | "u8" => read_memory::<u8>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "int8_t" | "i8" => read_memory::<i8>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "uint16_t" | "word" | "u16" => read_memory::<u16>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "int16_t" | "short" | "i16"  => read_memory::<i16>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "uint32_t" | "u32" | "dword" => read_memory::<u32>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "int32_t" | "int" | "long" | "i32" => read_memory::<i32>(process_handle, address,count_ptr, size, &mut bytes_read),
+            "uint64_t" | "qword" | "u64" => read_memory::<u64>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "int64_t" | "i64" => read_memory::<i64>(process_handle, address,count_ptr, size, &mut bytes_read),
+            "float" | "f32" => read_memory::<f32>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "double" | "f64" => read_memory::<f64>(process_handle, address, count_ptr, size, &mut bytes_read),
+            "char" | "str" | "string" => read_string(process_handle, address, count_ptr, size, &mut bytes_read),
             _ => return Err(format!("Unknown type: {}", dtype)),
         }
     }
@@ -142,24 +248,39 @@ pub fn espc(input: &[u8]) -> String {
 
 
 
-pub unsafe fn read_string(process_handle: HANDLE, address: usize, size: usize, bytes_read: &mut usize) {
+
+pub unsafe fn read_string(process_handle: HANDLE, address: usize, count_ptr: usize, size: usize, bytes_read: &mut usize) {
     let mut b_str = Vec::new();
-    let addr_s = address;
-    let mut i = 0;
+    let mut addr_s = address;
+    let ptr_size = NT_HEADER.unwrap().get_size_of_arch();
     let mut b = 1u8;
-    loop {
-        if ReadProcessMemory(process_handle, (addr_s + i) as LPVOID, &mut b as *mut _ as LPVOID, 1, &mut 0) == 0 {
-            eprintln!("{ERR_COLOR}failed to read memory at address {:#x} : {}", address, io::Error::last_os_error());
+    for i in 0..count_ptr {
+        print!("{BYTES_COLOR}{:#x}{RESET_COLOR} -> ", addr_s);
+        if i == count_ptr-1 {
+            let mut j = 0;
+            loop {
+                if ReadProcessMemory(process_handle, (addr_s + j) as LPVOID, ptr::addr_of_mut!(b) as LPVOID, 1, &mut 0) == 0 {
+                    io::stdout().flush().unwrap();
+                    eprintln!("{ERR_COLOR}Bad ptr : {}", io::Error::last_os_error());
+                    return;
+                }
+                if size != 0 && j == size || size == 0 && b == 0 {
+                    break
+                }
+                b_str.push(b);
+                *bytes_read += 1;
+                j+=1;
+            }
+            let str_byte = &b_str[..if size != 0 {size} else {b_str.len()}];
+            let str_r = espc(str_byte);
+            println!("\"{}\"", str_r);
             return;
+        }else {
+            if ReadProcessMemory(process_handle, addr_s as LPVOID, ptr::addr_of_mut!(addr_s) as LPVOID, ptr_size, &mut 0) == 0 {
+                io::stdout().flush().unwrap();
+                eprintln!("{ERR_COLOR}bad ptr : {}{RESET_COLOR}", io::Error::last_os_error());
+                return;
+            }
         }
-        if size != 0 && i == size || size == 0 && b == 0 {
-            break
-        }
-        b_str.push(b);
-        *bytes_read += 1;
-        i+=1;
     }
-    let str_byte = &b_str[..if size != 0 {size} else {b_str.len()}];
-    let str_r = espc(str_byte);
-    println!("{:#x}: \"{}\"", address, str_r);
 }

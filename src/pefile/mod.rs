@@ -4,7 +4,7 @@ pub mod function;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::{io, slice};
-use winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_DOS_SIGNATURE, IMAGE_NT_HEADERS64, IMAGE_FILE_HEADER, IMAGE_NT_HEADERS32};
+use winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_NT_HEADERS64, IMAGE_FILE_HEADER, IMAGE_NT_HEADERS32};
 
 
 use crate::OPTION;
@@ -13,6 +13,7 @@ pub struct Section {
     pub name: String,
     pub content: Vec<u8>,
     pub addr: u32,
+    pub ptr2raw: u32
 }
 
 
@@ -28,6 +29,13 @@ impl NtHeaders {
         match self {
             NtHeaders::Headers32(_) => 32,
             NtHeaders::Headers64(_) => 64,
+        }
+    }
+
+    pub fn get_size_of_arch(self) -> usize {
+        match self {
+            NtHeaders::Headers32(_) => 4,
+            NtHeaders::Headers64(_) => 8,
         }
     }
 }
@@ -55,10 +63,10 @@ pub fn get_name(smptroffs: u64, file: &mut File, name_bytes: Vec<u8>) -> Vec<u8>
 
 
 pub unsafe fn parse_header() -> Result<(), io::Error> {
-    let mut file = File::open(OPTION.file.clone().unwrap()).unwrap();
+    let mut file = File::open(OPTION.file.clone().unwrap())?;
     let mut dos_header: IMAGE_DOS_HEADER = std::mem::zeroed();
     file.read_exact(slice::from_raw_parts_mut(&mut dos_header as *mut _ as *mut u8, std::mem::size_of::<IMAGE_DOS_HEADER>()))?;
-    if dos_header.e_magic != IMAGE_DOS_SIGNATURE {
+    if dos_header.e_magic != 0x5a4d {
         return Err(io::Error::new(io::ErrorKind::Other, "Invalid DOS signature"));
     }
     file.seek(SeekFrom::Start((dos_header.e_lfanew  + 4) as u64))?;

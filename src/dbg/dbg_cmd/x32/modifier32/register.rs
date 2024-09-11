@@ -2,13 +2,13 @@ use winapi::um::winnt::WOW64_CONTEXT;
 use crate::usage;
 use crate::utils::*;
 
-pub fn handle_set_register(linev: &[&str], ctx: &mut WOW64_CONTEXT) {
-    if linev.len() < 3 {
+pub fn set_register32(linev: &[&str], ctx: &mut WOW64_CONTEXT) {
+    if linev.len() < 2 {
         eprintln!("{}", usage::USAGE_SET_REG);
         return;
     }
-    let target = linev[1];
-    let value_str = linev[2];
+    let target = linev[0];
+    let value_str = linev[1];
     let value = match str_to::<u32>(value_str) {
         Ok(val) => val,
         Err(e) => {

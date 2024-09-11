@@ -22,7 +22,7 @@ unsafe fn process_section(file: &mut File, section: IMAGE_SECTION_HEADER, smptro
     let mut content = vec![0u8; section.SizeOfRawData as usize];
     file.seek(SeekFrom::Start(section.PointerToRawData as u64))?;
     file.read_exact(&mut content)?;
-    SECTION_VS.push(Section { name, content, addr: section.VirtualAddress });
+    SECTION_VS.push(Section { name, content, addr: section.VirtualAddress , ptr2raw: section.PointerToRawData});
     Ok(())
 }
 

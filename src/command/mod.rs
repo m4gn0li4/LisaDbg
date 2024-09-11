@@ -9,6 +9,11 @@ pub mod skip;
 pub mod stret;
 pub mod remover;
 pub mod load;
+pub mod attach;
+mod user_var;
+pub mod set;
+
+
 
 pub mod arg {
     use crate::{OPTION, usage};
@@ -67,7 +72,7 @@ pub mod with_va {
     use crate::utils::*;
     pub fn handle_calcule_va(linev: &[&str]) {
         if linev.len() != 2 {
-            eprintln!("USAGE: clva <rva>");
+            eprintln!("USAGE: cva <rva>");
             return
         }
         match str_to::<u64>(linev[1]) {

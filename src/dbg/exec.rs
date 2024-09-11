@@ -5,26 +5,25 @@ use winapi::shared::minwindef::LPVOID;
 use winapi::um::debugapi::{ContinueDebugEvent, DebugActiveProcessStop, WaitForDebugEventEx};
 use winapi::um::fileapi::GetFinalPathNameByHandleA;
 use winapi::um::handleapi::CloseHandle;
-use winapi::um::memoryapi::{VirtualFreeEx, VirtualQueryEx};
+use winapi::um::memoryapi::VirtualQueryEx;
 use winapi::um::minwinbase::*;
 use winapi::um::processthreadsapi::{CreateProcessA, PROCESS_INFORMATION, STARTUPINFOA};
 use winapi::um::winbase::{DEBUG_PROCESS, INFINITE};
 use winapi::um::winnt::*;
 use crate::command::hook::HOOK_FUNC;
-use crate::command::skip::SKIP_ADDR;
-use crate::command::stret;
 use crate::dbg::*;
 use crate::OPTION;
 use crate::pefile::function::CR_FUNCTION;
 
-fn debug_loop(process_handle: HANDLE) {
+pub fn debug_loop(process_handle: HANDLE) {
     unsafe {
         let mut debug_event = mem::zeroed::<DEBUG_EVENT>();
         let mut continue_dbg = true;
         while continue_dbg {
             if WaitForDebugEventEx(&mut debug_event, INFINITE) == 0 {
                 eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> failed to WaitForDebugEventEx : {}", io::Error::last_os_error());
-                stop_dbg(process_handle, debug_event);
+                stop_dbg(debug_event);
+                return;
             }
             match debug_event.dwDebugEventCode {
                 EXCEPTION_DEBUG_EVENT => {
@@ -98,18 +97,7 @@ fn debug_loop(process_handle: HANDLE) {
                 CREATE_PROCESS_DEBUG_EVENT => {
                     println!("[{DBG_COLOR}Debug{RESET_COLOR}] -> Process created at address: {:x?}", debug_event.u.CreateProcessInfo().lpBaseOfImage);
                     BASE_ADDR = debug_event.u.CreateProcessInfo().lpBaseOfImage as u64;
-                    for addr in &OPTION.breakpoint_addr {
-                        memory::breakpoint::set_breakpoint(process_handle, *addr);
-                    }
-                    for addr_over in SKIP_ADDR.clone() {
-                        memory::set_addr_over(process_handle, addr_over);
-                    }
-                    for crt_func in CR_FUNCTION.iter_mut() {
-                        memory::set_cr_function(process_handle, crt_func);
-                    }
-                    for stret in &*stret::BREAK_RET {
-                        memory::breakpoint::set_breakpoint_in_ret_func(process_handle, *stret);
-                    }
+                    init(process_handle);
                     memory::watchpoint::set_watchpoint(debug_event, process_handle);
                 }
                 EXIT_PROCESS_DEBUG_EVENT => {
@@ -152,10 +140,12 @@ fn debug_loop(process_handle: HANDLE) {
             if continue_dbg {
                 if ContinueDebugEvent(debug_event.dwProcessId, debug_event.dwThreadId, DBG_CONTINUE) == 0 {
                     eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> failed to ContinueDebugEvent : {}", io::Error::last_os_error());
-                    stop_dbg(process_handle, debug_event);
+                    stop_dbg(debug_event);
+                    return;
                 }
             }else {
-                stop_dbg(process_handle, debug_event);
+                stop_dbg(debug_event);
+                return;
             }
         }
     }
@@ -164,19 +154,13 @@ fn debug_loop(process_handle: HANDLE) {
 
 
 
-unsafe fn stop_dbg(process_handle: HANDLE, debug_event: DEBUG_EVENT) {
+unsafe fn stop_dbg(debug_event: DEBUG_EVENT) {
     for crt_func in CR_FUNCTION.iter_mut() {
-        let addr_v = crt_func.address as LPVOID;
-        if VirtualFreeEx(process_handle, addr_v, 0, MEM_RELEASE) == 0 {
-            eprintln!("[{ERR_COLOR}Error{RESET_COLOR}] -> Error when freeing memory allocated to address {:#x} : {}", crt_func.address, io::Error::last_os_error());
-        }
         crt_func.address = 0;
     }
     BASE_ADDR = 0;
     DebugActiveProcessStop(debug_event.dwProcessId);
 }
-
-
 
 
 
@@ -196,3 +180,5 @@ pub fn start_debugging(exe_path: &str) {
         CloseHandle(pi.hThread);
     }
 }
+
+

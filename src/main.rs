@@ -5,6 +5,7 @@ mod symbol;
 mod ste;
 mod pefile;
 mod usage;
+mod process;
 
 use std::io;
 use std::io::Write;
@@ -12,8 +13,11 @@ use structopt::StructOpt;
 use once_cell::sync::Lazy;
 use crate::command::watchpoint::Watchpts;
 
+
+
+
 #[derive(Debug, StructOpt, Default)]
-#[structopt(name = "LisaDbg", version = "2.0 beta")]
+#[structopt(name = "LisaDbg", version = "1.7.0")]
 struct Dbgoption {
     file: Option<String>,
     #[structopt(short = "b", long = "breakpoint", help = "to place a breakpoint at an address (RVA)")]
@@ -91,6 +95,7 @@ fn handle_cmd(linev: &[&str], input: &str) {
         Some(&"clear") => command::clear_cmd::clear_cmd(),
         Some(&"remove") => command::remover::remove_element(&linev),
         Some(&"sym-info") => unsafe {command::sym::handle_sym_info(&linev, std::mem::zeroed())}
+        Some(&"attach") => command::attach::handle_attach(&linev),
         Some(&"load") => command::load::load(&linev),
         Some(&"add") => command::little_secret::add_op(&linev),
         Some(&"sub") => command::little_secret::sub_op(&linev),

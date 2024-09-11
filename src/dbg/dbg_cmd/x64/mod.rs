@@ -4,7 +4,7 @@ use winapi::shared::ntdef::HANDLE;
 use winapi::um::winnt::CONTEXT;
 use crate::{command, dbg, symbol};
 use crate::command::sym;
-use crate::dbg::{BASE_ADDR, memory};
+use crate::dbg::{memory, BASE_ADDR};
 use crate::dbg::dbg_cmd::{disasm, usages};
 use crate::dbg::memory::deref_mem;
 use crate::utils::*;
@@ -31,16 +31,15 @@ pub fn cmd_wait(ctx: &mut CONTEXT, process_handle: HANDLE, h_thread: HANDLE, con
             Some(&"c") | Some(&"continue") | Some(&"run") => break,
             Some(&"v") | Some(&"value") => unsafe { info_reg::handle_reg(&linev, *ctx) },
             Some(&"deref") => deref_mem::handle_deref(&linev, *ctx, process_handle),
-            Some(&"setr") | Some(&"setreg") => modifier::register::handle_set_register(&linev, ctx),
+            Some(&"set") => command::set::set_element64(process_handle, ctx, &linev),
             Some(&"q") | Some(&"quit") | Some(&"break") | Some(&"exit") => dbg::dbg_cmd::handle_quit(&mut input, continue_dbg, &mut stop_process),
             Some(&"base-addr") | Some(&"ba") => println!("base address : {VALUE_COLOR}{:#x}{RESET_COLOR}", unsafe { BASE_ADDR }),
-            Some(&"setm") | Some(&"setmemory") => memory::set_memory::handle_set_memory(process_handle, *ctx, &linev),
             Some(&"b") | Some(&"breakpoint") => command::breakpoint::handle_breakpoint_proc(&linev, process_handle, *ctx),
             Some(&"reset") => command::reset::handle_reset(&linev),
             Some(&"remove") => command::remover::remove_element_proc(&linev, process_handle, ctx),
             Some(&"cva") => command::with_va::handle_calcule_va(&linev),
             Some(&"ret") => dbg::dbg_cmd::handle_ret(ctx),
-            Some(&"break-point") | Some(&"b-ret") => command::stret::handle_stret(&linev, process_handle),
+            Some(&"break-ret") | Some(&"b-ret") => command::stret::handle_stret(&linev, process_handle),
             Some(&"skip") => dbg::dbg_cmd::handle_skip(&linev, process_handle),
             Some(&"view") => command::viewing::view_brpkt(&linev, *ctx),
             Some(&"disasm") => disasm::handle_disasm(&linev, process_handle, *ctx),
@@ -59,6 +58,7 @@ pub fn cmd_wait(ctx: &mut CONTEXT, process_handle: HANDLE, h_thread: HANDLE, con
             Some(&"address-function") | Some(&"address-func") | Some(&"addr-func") => dbg::dbg_cmd::print_curr_func(addr_func, *ctx),
             Some(&"symbol-local") | Some(&"sym-local") => sym::print_local_sym(*ctx),
             Some(&"memory-info") | Some(&"mem-info") => memory::mem_info::handle_mem_info(&linev, process_handle, *ctx),
+            Some(&"dettach") => {},
             Some(&"load") => command::load::load(&linev),
             Some(&"help") => usages::help(&linev),
             None => eprintln!("{ERR_COLOR}Please enter a command{RESET_COLOR}"),

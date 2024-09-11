@@ -10,7 +10,7 @@ pub enum Value {
 }
 
 fn unsigned_to_signed(value: u64) -> i64 {
-    return if value << 63 != 0 {
+    if value << 63 != 0 {
         value as i64
     } else if value << 31 != 0 {
         value as i32 as i64
@@ -82,7 +82,7 @@ impl ToValue for CONTEXT {
     }
 }
 
-pub const ALL_REG_NAME: [&str; 48]  = [
+pub const ALL_REG64: [&str; 48]  = [
     "rax",
     "rbx",
     "rcx",
@@ -138,7 +138,7 @@ pub const ALL_REG_NAME: [&str; 48]  = [
 pub unsafe fn handle_reg(linev: &[&str], ctx: CONTEXT) {
     match linev.get(1) {
         Some(&"all-reg") | Some(&"all-register") => {
-            for reg_name in ALL_REG_NAME.iter().filter(|&reg| reg.starts_with("r")) {
+            for reg_name in ALL_REG64.iter().filter(|&reg| reg.starts_with("r")) {
                 let value = ctx.str_to_value_ctx(reg_name);
                 match value {
                     Value::U64(v) => {
@@ -151,7 +151,7 @@ pub unsafe fn handle_reg(linev: &[&str], ctx: CONTEXT) {
         }
 
         Some(&"all-seg") | Some(&"all-segment") => {
-            for reg_name in ALL_REG_NAME.iter().filter(|&reg| reg.ends_with("s") && reg.len() == 2) {
+            for reg_name in ALL_REG64.iter().filter(|&reg| reg.ends_with("s") && reg.len() == 2) {
                 let value = ctx.str_to_value_ctx(reg_name);
                 match value {
                     Value::U64(v) => println!("{:<3} = {VALUE_COLOR}{:>#18x}{RESET_COLOR}", reg_name, v),
@@ -161,7 +161,7 @@ pub unsafe fn handle_reg(linev: &[&str], ctx: CONTEXT) {
         }
 
         Some(&"all-vec") | Some(&"all-vector") => {
-            for reg_name in ALL_REG_NAME.iter().filter(|r|!r.starts_with("xmm")) {
+            for reg_name in ALL_REG64.iter().filter(|r|!r.starts_with("xmm")) {
                 let value = ctx.str_to_value_ctx(reg_name);
                 match value {
                     Value::U128(v) => println!("{:<6} = {VALUE_COLOR}{:>#x}{:x}{RESET_COLOR} | {VALUE_COLOR}{}{RESET_COLOR}", reg_name, v.Low, v.High, v.Low as f64),
@@ -171,7 +171,7 @@ pub unsafe fn handle_reg(linev: &[&str], ctx: CONTEXT) {
         }
 
         Some(&"all") => {
-            for reg_name in ALL_REG_NAME {
+            for reg_name in ALL_REG64 {
                 let reg_value = ctx.str_to_value_ctx(reg_name);
                 match reg_value {
                     Value::U64(v) => {

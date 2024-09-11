@@ -1,17 +1,18 @@
-use winapi::shared::ntdef::LONGLONG;
 use winapi::um::winnt::{CONTEXT, M128A};
 use crate::dbg::dbg_cmd::x64::info_reg::Value;
 use crate::usage;
 use crate::utils::str_to;
 use crate::utils::*;
 
-pub fn handle_set_register(linev: &[&str], ctx: &mut CONTEXT) {
-    if linev.len() < 3 {
+
+
+pub fn set_register64(linev: &[&str], ctx: &mut CONTEXT) {
+    if linev.len() < 2 {
         eprintln!("{}", usage::USAGE_SET_REG);
         return;
     }
-    let target = linev[1];
-    let value_str = linev[2];
+    let target = linev[0];
+    let value_str = linev[1];
     let value = match str_to::<u64>(value_str) {
         Ok(val) => Value::U64(val),
         Err(_) => {
@@ -19,7 +20,7 @@ pub fn handle_set_register(linev: &[&str], ctx: &mut CONTEXT) {
                 Ok(val) => {
                     let value = M128A {
                         Low: (val & 0xFFFFFFFFFFFFFFFF) as u64,
-                        High: (val >> 64) as u64 as LONGLONG,
+                        High: (val >> 64) as i64,
                     };
                     Value::U128(value)
                 }

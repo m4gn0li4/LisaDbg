@@ -170,13 +170,13 @@ pub fn print_frame(count: usize) {
         for i in 0..count {
             if let Some(frame) = memory::stack::ST_FRAME.get(i) {
                 println!("\n{}Frame #{}:", VALID_COLOR, i);
-                let get_function_and_symbol = |offset: u64| {
+                let get_function_and_symbol = |offset| {
                     FUNC_INFO.iter().find(|f| f.BeginAddress as u64 + BASE_ADDR <= offset && f.EndAddress as u64 + BASE_ADDR >= offset)
                         .map(|func| {
                             if let Some(sym) = SYMBOLS_V.symbol_file.iter().find(|s| s.offset == func.BeginAddress as i64) {
                                 format!("<{}{:+}>", sym.name, offset as i64 - (func.BeginAddress as i64 + BASE_ADDR as i64))
                             } else {
-                                format!("<func_{:x}{:+}", func.BeginAddress, offset as i64 - (func.BeginAddress as i64 + BASE_ADDR as i64))
+                                format!("<func_{:x}{:+}>", func.BeginAddress, offset as i64 - (func.BeginAddress as i64 + BASE_ADDR as i64))
                             }
                         })
                         .unwrap_or_else(|| "".to_string())

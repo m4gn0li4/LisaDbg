@@ -13,4 +13,5 @@ regex = "1.10.5"
 iced-x86 = "1.21.0"
 anyhow = "1.0.86"
 fallible-iterator = "0.3.0"
-winapi = { version = "0.3.9", features = ["ntdef", "memoryapi", "winnt", "handleapi", "fileapi", "processthreadsapi", "debugapi", "dbghelp"] }
+winapi = { version = "0.3.9", features = ["ntdef", "memoryapi", "winnt", "handleapi", "fileapi", "processthreadsapi",
+    "debugapi", "dbghelp", "libloaderapi", "synchapi", "psapi", "tlhelp32", "heapapi"] }

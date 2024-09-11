@@ -4,6 +4,9 @@ pub const USAGE_SKIP: &str = "\x1b[32mUSAGE: skip [flag] <FUNCTION>\
         \nflag:\
         \n -a   --address   will consider that you had set the rva address of the function to <FUNCTION>\n\x1b[0m";
 
+
+
+
 pub const USAGE_B_RET: &str = "\x1b[32mUSAGE: b-ret [flag] <FUNCTION>
 
 Description:
@@ -16,6 +19,9 @@ Example:
   b-ret main          # Places a breakpoint on all ret instructions of the \"main\" function
   b-ret -a 0x1234     # Places a breakpoint on all ret instructions of the function at address 0x1234 (it must be a function at address 0x1234)
 \x1b[0m";
+
+
+
 
 pub const USAGE_BRPT: &str = "\x1b[32mUSAGE: breakpoint <RVA-ADDRESS/SYMBOL-NAME>\n
 Description:
@@ -179,6 +185,51 @@ Options:
     section, sec                Displays section information
     \x1b[0m";
 
+
+
+
+
+pub const USAGE_SET: &str = "\x1b[32m
+Usage: set <type> <arg>
+
+Types:
+    memory, mem                     - Changes the value located at the specified address, to find out more type \"help set mem\"
+    mem-protect, memory-protect     - To find out more type \"help set mem-protect\"
+    register, reg                   - changes the value of a specified register, to find out more type \"help set reg\"
+
+arg:
+    arguments of the specified type, to find out more type \"help set <type>\"
+\x1b[0m
+";
+
+
+
+
+pub const USAGE_SET_PROTECT: &str = "\
+\x1b[32mUsage: set mem-protect <address> <protection> [size_in_bytes]
+
+Description:
+  Change the memory protection of a specified region in the target process.
+
+Arguments:
+  <address>       - The address of the memory region to modify. This can be a numeric address or a symbol name.
+  <protection>    - The new protection flags to apply to the memory region. Valid options include:
+                     - 'noaccess'       - No access
+                     - 'readonly'       - Read-only
+                     - 'readwrite'      - Read and write
+                     - 'writecopy'      - Write copy
+                     - 'execute'        - Execute
+                     - 'exec_read'      - Execute and read
+                     - 'exec_readwrite' - Execute, read, and write
+                     - 'exec_writecopy' - Execute and write copy
+                     - Abbreviations are also supported (e.g., 'r' for 'readonly').
+
+  [size_in_bytes] - Optional. The size of the memory region to protect in bytes. If not provided, the command will determine the size based on the current memory region of the address.
+
+Example:
+  set mem-protect 0x00400000 exec_readwrite         # This command sets the memory protection of the region starting at address 0x00400000 to allow reading and writing, as well as execution.
+  set mem-protect symbol_name exec_read 4096         # This command sets the memory protection of the region starting at the address associated with 'symbol_name' to allow execution and reading. The size of the region to protect is specified as 4096 bytes
+\x1b[0m";
 
 
 
