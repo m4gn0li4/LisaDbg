@@ -1,5 +1,5 @@
 # LisaDbg
-it's a debugger written in rust, but this will most likely change in the future,
+it's a debugger written in rust
 it has a small cli interface but the vast majority of available commands are in the context of the app
 # here is the cli interface :
 
