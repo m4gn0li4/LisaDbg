@@ -5,7 +5,6 @@ use crate::command::def::func::CrtFunc;
 use crate::command::hook::Hook;
 use crate::command::watchpoint::Watchpts;
 use crate::{command, handle_cmd};
-use crate::dbg::BASE_ADDR;
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct AfterB {
@@ -32,8 +31,7 @@ pub struct All {
 
 impl All {
     pub fn break_contain(&self, addr: u64) -> bool {
-        self.break_rva.contains(&addr) || self.break_va.contains(&addr) ||
-            self.break_va.contains(&(addr - unsafe {BASE_ADDR})) || self.break_ret.contains(&addr)
+        self.break_rva.contains(&addr) || self.break_va.contains(&addr) || self.break_ret.contains(&addr)
     }
 }
 
